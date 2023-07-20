@@ -3,7 +3,7 @@ import io
 import sys
 import select
 import threading
-
+import time
 
 class _StdinListener:
     """functor that asynchronously reads stdin into a buffer and parses lines into
@@ -32,8 +32,13 @@ class _StdinListener:
         self.buffer.write(current_line)  # put partial line back into new buffer
 
     def read_stdin_line(self):
-        line = sys.stdin.readline()
-        # line = sys.stdin.read(4096)
+        line = ""
+        while True:
+            # Non-blocking read from stdin
+            if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+                line = sys.stdin.readline()
+            time.sleep(0.001)
+        # Process the input from stdin
         if len(line) > 0:
             self.buffer.write(line)
             self._parse_buffer()

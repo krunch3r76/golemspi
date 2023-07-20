@@ -19,7 +19,19 @@ from processqueue import FileQueue, StdinQueue
 from utils.colors import Colors
 from model import Model
 from utils.mylogger import console_logger, file_logger
+import signal
 
+def handle_keyboard_interrupt(signal, frame):
+    if 'log_queue' in globals():
+        try:
+            log_queue._thread.join()  # Call join on log_queue thread here
+        except:
+            pass
+    sys.exit(0)
+
+
+# Register the signal handler for Ctrl+C
+signal.signal(signal.SIGINT, handle_keyboard_interrupt)
 
 if len(sys.argv) == 2:
     cmdline_argument = sys.argv[1]

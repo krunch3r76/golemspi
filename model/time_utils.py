@@ -1,32 +1,50 @@
 import datetime
 import time
+import re
+
+def get_utc_offset_in_seconds(timestamp):
+    # Regex pattern to find the UTC offset at the end of the string
+    pattern = r'([+-]\d{4})$'
+    match = re.search(pattern, timestamp)
+
+    if not match:
+        return 0
+
+    # Extract the sign, hours, and minutes from the match
+    sign_and_offset = match.group(1)
+    sign = sign_and_offset[0]
+    hours = int(sign_and_offset[1:3])
+    minutes = int(sign_and_offset[3:5])
+    
+    offset_seconds = ((hours * 3600) + (minutes * 60)) * (-1 if sign == '-' else 1)
+    
+    return offset_seconds
+
+def get_timestamp_without_offset(timestamp):
+    # Regex pattern to find the UTC offset at the end of the string
+    pattern = r'([+-]\d{4})$'
+    
+    # Remove the UTC offset from the timestamp string
+    timestamp_without_offset = re.sub(pattern, '', timestamp).strip()
+    
+    return timestamp_without_offset
 
 
 def convert_to_unix_time(timestamp):
     # Split the timestamp string on the last "-"
     unix_time = 0
     try:
-        split_index = timestamp.rindex("-")
-        dt_string = timestamp[:split_index]
-        utc_offset_string = timestamp[split_index + 1 :]
+        dt_string = get_timestamp_without_offset(timestsamp)
+        offset_seconds = get_utc_offset_in_seconds(timetamp)
 
         # Parse the datetime string into a datetime object
         dt = datetime.datetime.strptime(dt_string, "%Y-%m-%dT%H:%M:%S.%f")
 
-        # Check if UTC offset is present in the timestamp string
-        if utc_offset_string:
-            # Convert the UTC offset string to seconds
-            hours = int(utc_offset_string[:2])
-            minutes = int(utc_offset_string[2:])
 
-            offset_seconds = (hours * 3600) + (minutes * 60)
-            utc_offset_seconds = int(utc_offset_string) / 100 * 60 * 60
+        offset_seconds = (hours * 3600) + (minutes * 60)
+        utc_offset_seconds = int(utc_offset_string) / 100 * 60 * 60
 
-            # Adjust the datetime object based on the UTC offset
-            if utc_offset_seconds >= 0:
-                dt = dt - datetime.timedelta(seconds=utc_offset_seconds)
-            else:
-                dt = dt + datetime.timedelta(seconds=abs(utc_offset_seconds))
+        dt = dt + datetime.timedelta(seconds=utc_offset_seconds)
 
         # Convert the adjusted datetime object to Unix time
         unix_time = int(time.mktime(dt.timetuple()))
