@@ -20,8 +20,8 @@ $ cd golemspi
 (./golemspi) $ golemsp run 2>&1 | ./golemspi.py
 ```
 
-# notes / issues
-scrolling is enabled if you use a log file intermediate. enabling scrolling while piping may not be feasible.
+## notes / issues
+scrolling is enabled if you use a log file intermediate. enabling scrolling while piping (as in the example usage) may not be feasible.
 ```bash
 $ golemsp run 2>&1 | tee -a /tmp/golemsp.log
 (./golemspi) $ ./golemspi.py /tmp/golemsp.log
