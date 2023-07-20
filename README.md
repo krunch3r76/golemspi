@@ -4,7 +4,18 @@ overlay for summary of live golem provider console output. this is a work in pro
 # video demonstration
 to be continued...
 
+# downloading
+```bash
+$ git clone https://github.com/krunch3r76/golemspi.git
+$ cd golemspi
+(./golemspi) $
+```
+# checking for updates
+```bash
+(./golemspi) $ git pull
+```
+
 # example usage
 ```bash
-$ golemsp run 2>&1 | ./golemspi.py
+(./golemspi) $ golemsp run 2>&1 | ./golemspi.py
 ```
