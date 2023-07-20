@@ -74,7 +74,7 @@ class PaddedWindow:
 
         self.__length_at_scrollback = newval
 
-    def set_lines_to_display(self, new_lines_to_display, middle_line=None):
+    def set_lines_to_display(self, new_lines_to_display, middle_line=None, redraw=True):
         """
         replace the buffer of lines displayed and redisplay
         Args:
@@ -88,7 +88,10 @@ class PaddedWindow:
         if middle_line is None:
             self._length_at_scrollback = len(self._lines)
             self._AUTOSCROLL = True
-        self.redraw()
+        if self.redraw:
+            self.redraw()
+        else:
+            self.redrawwin()
 
     @property
     def _printable_range(self):

@@ -180,7 +180,7 @@ class View:
             self._console_scr.redraw()
             self.NEWLOGMSG = False
         if self.exeunit_line.task_running:
-            self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
+            self._status_scr.set_lines_to_display([None, self.exeunit_line.print()], redraw=False)
             # self._status_scr.redraw()
 
         return None  # no interaction
