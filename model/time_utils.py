@@ -44,7 +44,7 @@ def convert_to_unix_time(timestamp):
         offset_seconds = (hours * 3600) + (minutes * 60)
         utc_offset_seconds = int(utc_offset_string) / 100 * 60 * 60
 
-        dt = dt + datetime.timedelta(seconds=utc_offset_seconds)
+        dt = dt - datetime.timedelta(seconds=utc_offset_seconds)
 
         # Convert the adjusted datetime object to Unix time
         unix_time = int(time.mktime(dt.timetuple()))
