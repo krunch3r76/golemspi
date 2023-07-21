@@ -22,11 +22,13 @@ from utils.mylogger import console_logger, file_logger
 import signal
 
 def handle_keyboard_interrupt(signal, frame):
+    view.shutdown()
     if 'log_queue' in globals():
         try:
             log_queue._thread.join()  # Call join on log_queue thread here
         except:
             pass
+
     sys.exit(0)
 
 

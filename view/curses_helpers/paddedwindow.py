@@ -91,7 +91,7 @@ class PaddedWindow:
         if self.redraw:
             self.redraw()
         else:
-            self.redrawwin()
+            self.refresh()
 
     @property
     def _printable_range(self):
