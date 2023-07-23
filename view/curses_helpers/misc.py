@@ -26,6 +26,7 @@ def sane_screen_defaults(scr):
     scr.nodelay(True)  # make getch non-blocking
     scr.scrollok(True)
     scr.keypad(True)
+    curses.delay_output(100)
 
 
 def terminate_curses(scr):

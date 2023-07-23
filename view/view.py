@@ -22,6 +22,9 @@ from .curses_helpers import (
 from .nclasses import HardwareLine, ExeUnitLine
 
 
+from utils.mylogger import console_logger, file_logger
+
+
 class View:
     """wrap an ncurses window"""
 
@@ -85,6 +88,7 @@ class View:
         )
         self._mainscreen.clear()
         self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
+
         # for debugging, create a logger that writes to a file
         # /init screen
 
@@ -191,9 +195,9 @@ class View:
                 )
             self._console_scr.redraw()
             self.NEWLOGMSG = False
-        if self.exeunit_line.task_running:
+        elif self.exeunit_line.task_running:
             self._status_scr.set_lines_to_display(
-                [None, self.exeunit_line.print()], redraw=False
+                [None, self.exeunit_line.print()], redraw=True
             )
             # self._status_scr.redraw()
 

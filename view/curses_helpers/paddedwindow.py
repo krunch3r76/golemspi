@@ -1,6 +1,9 @@
 # view/curses_helpers/paddedwindow.py
 import curses
+import textwrap
 from .get_printable_range import get_printable_range
+
+from utils.mylogger import console_logger, file_logger
 
 
 class PaddedWindow:
@@ -35,12 +38,6 @@ class PaddedWindow:
             # padding is a tuple (w0, n1, e2, s3)
             if parentwin is None:
                 raise Exception("untested without a parent screen/window")
-                # win = curses.newwin(
-                #     curses.LINES - padding[1] - padding[3],
-                #     curses.COLS - padding[0] - padding[2],
-                #     padding[1],
-                #     padding[0],
-                # )
             else:
                 W, N, E, S = range(4)
                 win = parentwin.subwin(
@@ -88,10 +85,13 @@ class PaddedWindow:
         if middle_line is None:
             self._length_at_scrollback = len(self._lines)
             self._AUTOSCROLL = True
-        if self.redraw:
+
+        if redraw:
             self.redraw()
         else:
-            self.refresh()
+            self._win.noutrefresh()
+            curses.doupdate()
+            # self._win.refresh()
 
     @property
     def _printable_range(self):
@@ -152,6 +152,77 @@ class PaddedWindow:
 
         printable_range = self._printable_range
         if printable_range is not None:
+            # Get dimensions of the window
+            (h, w) = self._win.getmaxyx()
+
+            # Create a new pad with the same dimensions
+            pad = curses.newpad(h + 1, w)
+
+            row_offset = 0
+            for line_offset in range(printable_range[0], printable_range[1] + 1):
+                wrapped_lines = textwrap.wrap(self._lines[line_offset], w)
+                for wrapped_line in wrapped_lines:
+                    pad.addstr(row_offset, 0, wrapped_line)
+                    row_offset += 1
+
+            # Copy the pad to the window
+            W, N, E, S = range(4)
+            pad.refresh(
+                0,
+                0,
+                self._padding[N],
+                self._padding[W],
+                h - 1 + self._padding[N],
+                w - 1 + self._padding[W],
+            )
+
+            # Now refresh the window
+            self._win.refresh()
+
+    def redraw__(self, reset=False):
+        """print lines in the printable_range to log console (main screen) and refresh"""
+
+        if self._AUTOSCROLL or reset:
+            # update offset at which scrolling would resume
+            self._length_at_scrollback = len(self._lines)
+
+        printable_range = self._printable_range
+        if printable_range is not None:
+            # Get dimensions of the window
+            (h, w) = self._win.getmaxyx()
+
+            # Create a new pad with the same dimensions
+            pad = curses.newpad(h, w)
+
+            for offset in range(printable_range[0], printable_range[1] - 1):
+                pad.addstr(offset - printable_range[0], 0, self._lines[offset] + "\n")
+            # do not append newline to final line
+            pad.addstr(
+                printable_range[1] - 1 - printable_range[0],
+                0,
+                self._lines[printable_range[1] - 1],
+            )
+
+            # Copy the pad to the window
+            # pad.refresh(0, 0, 0, 0, h - 1, w - 1)
+            # pad.addstr(printable_range[1] - 1 - printable_range[0], 0, self._lines[printable_range[1] - 1])
+            W, N, E, S = range(4)
+
+            # pad.refresh(self._padding[N], self._padding[W], 0, 0, h - 1, w - 1)
+            pad.refresh(0, 0, self._padding[N], self._padding[W], h - 1, w - 1)
+
+            # Now refresh the window
+            self._win.refresh()
+
+    def _redraw(self, reset=False):
+        """print lines in the printable_range to log console (main screen) and refresh"""
+
+        if self._AUTOSCROLL or reset:
+            # update offset at which scrolling would resume
+            self._length_at_scrollback = len(self._lines)
+
+        printable_range = self._printable_range
+        if printable_range is not None:
             self._win.clear()
             self._win.move(0, 0)
             for offset in range(
@@ -168,7 +239,8 @@ class PaddedWindow:
                 #                + f": {countRows},{printable_range}"
             )
             # self.last_printed_range = printable_range
-            self._win.refresh()
+            self._win.noutrefresh()
+            curses.doupdate()
 
     def resize(self):
         """fit window to current dimensions"""
@@ -227,7 +299,7 @@ class PaddedWindow:
         # return padding sequence
         return self._padding
 
-    @property
+    @padding.setter
     def padding(self, padding_tuple):
         # update padding given the tuple
         raise Exception("setting padding publicly not supported")
