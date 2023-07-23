@@ -10,6 +10,8 @@ import curses
 # win_show(win, label, label_color=1)
 # rows_occupied(countCol, line)
 
+from utils.mylogger import file_logger
+
 
 def ordinal_for_control_char(control_char):
     # compute the ordinal for the ctrl character sequence including control_char
@@ -38,7 +40,7 @@ def terminate_curses(scr):
     curses.endwin()
 
 
-def resize_on_key_resize(scr, subwindows=None):
+def resize_on_key_resize(scr, subwindows=None, resizing=False):
     # update ncurses on a new "screen" size
 
     # this is useful to prevent windows from throwing an exception when
@@ -46,16 +48,23 @@ def resize_on_key_resize(scr, subwindows=None):
     # for example, a line written beyond the actual columns available
     # will throw but this is not the case as long as the underlying
     # screen is correctly updated no matter how long / how many columns
+    file_logger.debug("resizing")
     curses.update_lines_cols()
+    # curses.resizeterm(curses.LINES, curses.COLS)
     scr.resize(curses.LINES, curses.COLS)
-    scr.clear()  # assume underlying screen itself never contains important info, can be cleared
-
+    # curses.doupdate()
     if subwindows is not None:
         for subwindow in subwindows:
-            subwindow.clear()
-            subwindow.resize()
-            subwindow.redrawwin()
-            # subwindow.refresh()
+            # subwindow.clear()
+            subwindow.resize_fit()
+            # subwindow.redrawwin()
+        scr.clear()  # clear artifacts from subwindows
+        scr.noutrefresh()
+        for subwindow in subwindows:
+            # subwindow.redrawwin()
+            subwindow.redraw()
+        curses.napms(100)
+    return True
 
 
 # credit: from python_ncurses_examples

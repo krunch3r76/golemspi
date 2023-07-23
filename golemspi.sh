@@ -1,25 +1,27 @@
 #!/bin/bash
-#
-# Function to clean up and exit the script
-# cleanup() {
-#     echo "Cleaning up..."
-#     kill -INT "$command_pid"  # Kill the background process
-#     wait "$command_pid"
-#     rm $logfile
-#     exit 1
-# }
 
 
 cleanup() {
     echo "Cleaning up..."
-    kill -INT "$command_pid"  # Kill the background process
-    sleep 5  # Allow some time for the process to terminate normally
     if kill -0 "$command_pid" > /dev/null 2>&1; then
-        # If the process is still running, kill it with SIGKILL
-        kill -KILL "$command_pid"
+        # Send the interrupt signal to command_pid and its child processes
+        pkill -INT -P "$command_pid"
+        for i in $(seq 1 10); do  # wait up to 10 seconds
+            # Check if the process and any of its child processes are still running
+            if ! (kill -0 "$command_pid" > /dev/null 2>&1 || pgrep -P "$command_pid" > /dev/null 2>&1); then
+                break  # exit the loop when process is no longer running
+            fi
+            sleep 1  # wait for 1 second between checks
+        done
+        # If the process or its child processes are still running, kill them
+        if kill -0 "$command_pid" > /dev/null 2>&1 || pgrep -P "$command_pid" > /dev/null 2>&1; then
+            pkill -KILL -P "$command_pid"
+            kill -KILL "$command_pid"
+        fi
     fi
-    wait "$command_pid"
     rm $logfile
+    stty sane
+    sleep 3
     exit 1
 }
 

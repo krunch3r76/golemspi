@@ -2,6 +2,8 @@ import textwrap
 
 # from .rows_occupied import rows_occupied
 
+from utils.mylogger import console_logger, file_logger
+
 
 def _get_printable_range_wrapped(
     lines,
@@ -50,6 +52,7 @@ def _get_printable_range_wrapped(
     if top_offset < 0:
         top_offset = 0
 
+    file_logger.debug(f"{top_offset}, {k_last_line_offset}")
     return (top_offset, k_last_line_offset)
 
 

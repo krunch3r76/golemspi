@@ -4,7 +4,8 @@ import curses.ascii
 
 import curses.panel
 
-# import time  # debug
+import time
+
 # import sys
 from enum import auto
 
@@ -58,6 +59,8 @@ class View:
         self._SUPRESS_WARN = False
         self._SUPRESS_ERROR = False
         self._SUPRESS_INFO = False
+        self.resize_start_time = None
+
         # self._log_lines = []  # ordered list of log lines
         # self._log_lines.filterPredicate = lambda e: "ExeUnit" in e
         self._log_lines = self._log_lines  # reference to, may later reference
@@ -129,18 +132,25 @@ class View:
         getch = None
         getch = self._mainscreen.getch()
         if getch == curses.KEY_RESIZE:
+            # check if resize has been locked (time)
+            # if not, start resize timer
             resize_on_key_resize(
                 self._mainscreen,
-                [
-                    self._console_scr,
-                ],
+                [self._status_scr, self._console_scr],
             )
-            self._status_scr.redraw()
-            self._console_scr.redraw()
+
         elif getch == curses.KEY_UP:
             self._console_scr.scrollup()
         elif getch == curses.KEY_DOWN:
             self._console_scr.scrolldown()
+
+        # check if resize timer has expired
+        # if self.resize_start_time is not None:
+        #     current_time = time.perf_counter()
+        #     diff = current_time - self.resize_start_time
+        #     if diff > self.RESIZE_DELAY:
+        #         self.resize_start_time = None
+
         # elif getch == ordinal_for_control_char("l"):
         #     """
         #     debug

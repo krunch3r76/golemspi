@@ -40,6 +40,7 @@ class PaddedWindow:
                 raise Exception("untested without a parent screen/window")
             else:
                 W, N, E, S = range(4)
+                # win = parentwin.subwin(
                 win = parentwin.subwin(
                     curses.LINES - padding[N] - padding[S],  # height
                     curses.COLS - padding[W] - padding[E],  # width
@@ -56,6 +57,7 @@ class PaddedWindow:
         self._lines = list_of_lines
         self._AUTOSCROLL = True  # state of scrolling
         self.__length_at_scrollback = len(self._lines)  # length cutoff for scrollback
+        self._pad = None
         # self._last_printed_range = None  # useful for when resizing to expand down
 
     @property
@@ -89,8 +91,7 @@ class PaddedWindow:
         if redraw:
             self.redraw()
         else:
-            self._win.noutrefresh()
-            curses.doupdate()
+            self.refresh()
             # self._win.refresh()
 
     @property
@@ -146,28 +147,36 @@ class PaddedWindow:
     def redraw(self, reset=False):
         """print lines in the printable_range to log console (main screen) and refresh"""
 
+        W, N, E, S = range(4)
         if self._AUTOSCROLL or reset:
             # update offset at which scrolling would resume
             self._length_at_scrollback = len(self._lines)
 
         printable_range = self._printable_range
+        if printable_range[1] - printable_range[0] < 1:
+            printable_range = None
         if printable_range is not None:
             # Get dimensions of the window
             (h, w) = self._win.getmaxyx()
 
-            # Create a new pad with the same dimensions
-            pad = curses.newpad(h + 1, w)
+            # Create a new pad if it doesn't exist or if the window has been resized
+            if self._pad is None or self._pad.getmaxyx() != (h, w):
+                # self._pad = curses.newpad(h + 1, w + 0)
+                self._pad = curses.newpad(h + 0, w + 0)
+
+            # Clear the pad before adding new content
+            self._pad.clear()
+            # self._pad = curses.newpad(h + 0, w + 0)
 
             row_offset = 0
             for line_offset in range(printable_range[0], printable_range[1] + 1):
                 wrapped_lines = textwrap.wrap(self._lines[line_offset], w)
                 for wrapped_line in wrapped_lines:
-                    pad.addstr(row_offset, 0, wrapped_line)
+                    self._pad.insstr(row_offset, 0, wrapped_line)
                     row_offset += 1
 
             # Copy the pad to the window
-            W, N, E, S = range(4)
-            pad.refresh(
+            self._pad.noutrefresh(
                 0,
                 0,
                 self._padding[N],
@@ -176,80 +185,61 @@ class PaddedWindow:
                 w - 1 + self._padding[W],
             )
 
-            # Now refresh the window
-            self._win.refresh()
-
-    def redraw__(self, reset=False):
-        """print lines in the printable_range to log console (main screen) and refresh"""
-
-        if self._AUTOSCROLL or reset:
-            # update offset at which scrolling would resume
-            self._length_at_scrollback = len(self._lines)
-
-        printable_range = self._printable_range
-        if printable_range is not None:
-            # Get dimensions of the window
-            (h, w) = self._win.getmaxyx()
-
-            # Create a new pad with the same dimensions
-            pad = curses.newpad(h, w)
-
-            for offset in range(printable_range[0], printable_range[1] - 1):
-                pad.addstr(offset - printable_range[0], 0, self._lines[offset] + "\n")
-            # do not append newline to final line
-            pad.addstr(
-                printable_range[1] - 1 - printable_range[0],
-                0,
-                self._lines[printable_range[1] - 1],
-            )
-
-            # Copy the pad to the window
-            # pad.refresh(0, 0, 0, 0, h - 1, w - 1)
-            # pad.addstr(printable_range[1] - 1 - printable_range[0], 0, self._lines[printable_range[1] - 1])
-            W, N, E, S = range(4)
-
-            # pad.refresh(self._padding[N], self._padding[W], 0, 0, h - 1, w - 1)
-            pad.refresh(0, 0, self._padding[N], self._padding[W], h - 1, w - 1)
-
-            # Now refresh the window
-            self._win.refresh()
-
-    def _redraw(self, reset=False):
-        """print lines in the printable_range to log console (main screen) and refresh"""
-
-        if self._AUTOSCROLL or reset:
-            # update offset at which scrolling would resume
-            self._length_at_scrollback = len(self._lines)
-
-        printable_range = self._printable_range
-        if printable_range is not None:
-            self._win.clear()
-            self._win.move(0, 0)
-            for offset in range(
-                printable_range[0], printable_range[1] - 1
-            ):  # final line after
-                self._win.addstr(
-                    self._lines[offset]
-                    + "\n"
-                    #                    + f": {countRows},{printable_range},{datetime.now().timestamp()}" + "\n"
-                )
-            # do not append newline to final line
-            self._win.addstr(
-                self._lines[printable_range[1] - 1]
-                #                + f": {countRows},{printable_range}"
-            )
-            # self.last_printed_range = printable_range
-            self._win.noutrefresh()
+            # Update the physical screen with the changes made to the pad
             curses.doupdate()
 
-    def resize(self):
-        """fit window to current dimensions"""
-        curses.update_lines_cols()
+    # def redraw_(self, reset=False):
+    #     """print lines in the printable_range to log console (main screen) and refresh"""
 
-        self._win.resize(
-            curses.LINES - self._padding[1] - self._padding[3],
-            curses.COLS - self._padding[0] - self._padding[2],
-        )
+    #     if self._AUTOSCROLL or reset:
+    #         # update offset at which scrolling would resume
+    #         self._length_at_scrollback = len(self._lines)
+
+    #     printable_range = self._printable_range
+    #     if printable_range is not None:
+    #         # Get dimensions of the window
+    #         (h, w) = self._win.getmaxyx()
+
+    #         # Create a new pad with the same dimensions
+    #         pad = curses.newpad(h + 1, w)
+
+    #         row_offset = 0
+    #         for line_offset in range(printable_range[0], printable_range[1] + 1):
+    #             wrapped_lines = textwrap.wrap(self._lines[line_offset], w)
+    #             for wrapped_line in wrapped_lines:
+    #                 pad.addstr(row_offset, 0, wrapped_line)
+    #                 row_offset += 1
+
+    #         # Copy the pad to the window
+    #         W, N, E, S = range(4)
+    #         pad.refresh(
+    #             0,
+    #             0,
+    #             self._padding[N],
+    #             self._padding[W],
+    #             h - 1 + self._padding[N],
+    #             w - 1 + self._padding[W],
+    #         )
+
+    #         # Now refresh the window
+    #         self._win.overwrite(pad)
+    #         self._win.refresh()
+    #         if len(self._lines) < 10:
+    #             file_logger.debug(self._lines)
+
+    def resize_fit(self):
+        """fit window to current dimensions"""
+        # curses.update_lines_cols()  # redundant?
+        W, N, E, S = range(4)
+        try:
+            self._win.resize(
+                curses.LINES - self._padding[N] - self._padding[S],
+                curses.COLS - self._padding[W] - self._padding[E],
+            )
+            if self._pad is not None:
+                self._pad.clear()
+        except Exception as e:
+            file_logger.debug("resize error {e}", e)
 
     def redrawwin(self):
         """wrap redrawwin
@@ -257,13 +247,13 @@ class PaddedWindow:
         the next refresh() call"""
         self._win.redrawwin()
 
-    # def refresh(self, *args, **kwargs):
-    #     """wrap refresh
-    #     * update the display immediately (sync actual screen with previous drawing/deleting
-    #     methods
-    #     """
-
-    #     self._win.refresh(*args, **kwargs)
+    def refresh(self, *args, **kwargs):
+        """wrap refresh
+        * update the display immediately (sync actual screen with previous drawing/deleting
+        methods
+        """
+        self._win.noutrefresh()
+        curses.doupdate()
 
     def getmaxyx(self):
         # wrap getmaxyx
