@@ -1,5 +1,5 @@
 # golemspi
-overlay for summary of live golem provider console output. this is a work in progress and besides having a terribly ugly view it will probably break.
+overlay for summary of live golem provider console output. this is a slow work in progress. thanks for trying it early on!
 
 # video demonstration
 to be continued...
