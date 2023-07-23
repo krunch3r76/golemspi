@@ -17,7 +17,7 @@ class ModelAdditions:
             "timestamp": unix_timestamp,
             "cpu_threads": cpu_threads,
             "mem_gib": mem_gib,
-            "storage_gib": storage_gib
+            "storage_gib": storage_gib,
         }
         self.model.view_update_flags["hardware_resource_cap_info"] = True
 
@@ -132,7 +132,15 @@ class ModelAdditions:
         """
         by implication the pid corresponds to the last exeunit/activity added to the model
         """
+        file_logger.debug("adding exeunit pid")
+        file_logger.debug(f"converting {timestamp}")
         unixtimestamp = convert_to_unix_time(timestamp)
+
+        file_logger.debug(f"unix timestamp: {unixtimestamp}")
+        from datetime import datetime
+
+        dt = datetime.fromtimestamp(unixtimestamp)
+        file_logger.debug(f"datetime from timestamp: {str(dt)}")
 
         # Retrieve the last inserted activityId
         cursor = self.model.connection.execute(

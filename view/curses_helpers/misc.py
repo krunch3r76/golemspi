@@ -1,6 +1,7 @@
 import curses
-from .get_printable_range import get_printable_range
-from .paddedwindow import PaddedWindow
+
+# from .get_printable_range import get_printable_range
+# from .paddedwindow import PaddedWindow
 
 # sane_screen_defaults(scr)
 # terminate_curses(scr)

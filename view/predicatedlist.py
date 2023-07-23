@@ -1,6 +1,6 @@
 # view/predicatedlist.py
 
-import copy
+# import copy
 import collections
 
 

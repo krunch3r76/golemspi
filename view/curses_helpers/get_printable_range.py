@@ -54,7 +54,7 @@ def get_printable_range(
     lines, last_line_offset=None, countRows=None, countCols=None, win=None, padding=None
 ):
     # get printable range up to end less scroll_off_current
-    printable_range = None
+    # printable_range = None
     if len(lines) == 0:
         return None
 

@@ -11,25 +11,28 @@
 # these events trigger signals to the model (and view)
 
 import sys
-from pathlib import Path
+
+# from pathlib import Path
 
 from controller import Controller
 from view import View
 from processqueue import FileQueue, StdinQueue
-from utils.colors import Colors
+
+# from utils.colors import Colors
 from model import Model
-from utils.mylogger import console_logger, file_logger
+
+# from utils.mylogger import console_logger, file_logger
 import signal
 
-def handle_keyboard_interrupt(signal, frame):
-    view.shutdown()
-    if 'log_queue' in globals():
-        try:
-            log_queue._thread.join()  # Call join on log_queue thread here
-        except:
-            pass
 
-    sys.exit(0)
+def handle_keyboard_interrupt(signal, _):
+    view.shutdown()
+    # if "log_queue" in globals():
+    #     try:
+    #         log_queue._thread.join()  # Call join on log_queue thread here
+    #     except:
+    #         pass
+    sys.exit(signal)
 
 
 # Register the signal handler for Ctrl+C

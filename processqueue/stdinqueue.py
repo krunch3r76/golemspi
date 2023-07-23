@@ -1,9 +1,13 @@
-import multiprocessing, queue
+import multiprocessing
+import queue
 import io
 import sys
 import select
 import threading
 import time
+
+from utils.mylogger import console_logger, file_logger
+
 
 class _StdinListener:
     """functor that asynchronously reads stdin into a buffer and parses lines into
@@ -35,17 +39,18 @@ class _StdinListener:
         line = ""
         while True:
             # Non-blocking read from stdin
-            if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-                line = sys.stdin.readline()
-            time.sleep(0.001)
-        # Process the input from stdin
-        if len(line) > 0:
-            self.buffer.write(line)
-            self._parse_buffer()
+            if sys.stdin in select.select([sys.stdin], [], [], 0.01)[0]:
+                chunk = sys.stdin.read(1)
+                if not chunk:
+                    break  # No more data to read
+                line += chunk
+                if chunk == "\n":
+                    self.buffer.write(line)
+                    self._parse_buffer()
+                    line = ""  # Reset the line for the next input
 
     def __call__(self):
         while True:
-            # ready, _, _ = select.select([sys.stdin], [], [], 0.1)
             if self.stop_event.is_set():
                 break
             # if ready:
@@ -74,8 +79,6 @@ if __name__ == "__main__":
     stdinQueue = StdinQueue()
     while True:
         try:
-            import time
-
             time.sleep(0.01)
             next_line = stdinQueue.get_nowait()
         except queue.Empty:

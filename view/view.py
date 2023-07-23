@@ -3,17 +3,24 @@ import curses
 import curses.ascii
 
 import curses.panel
-import sys
-from enum import Enum, auto
 
-import time  # debug
-from .predicatedlist import *
+# import time  # debug
+# import sys
+from enum import auto
+
+from .predicatedlist import PredicatedList
+from utils.mylogger import file_logger
 
 # from processqueue import ProcessQueue, ProcessTerminated
-from processqueue import FileQueue
-from .curses_helpers import *
+from .curses_helpers import (
+    sane_screen_defaults,
+    PaddedWindow,
+    terminate_curses,
+    resize_on_key_resize,
+)
 
 from .nclasses import HardwareLine, ExeUnitLine
+
 
 class View:
     """wrap an ncurses window"""
@@ -25,11 +32,13 @@ class View:
     #     NEWLOGMSG = auto()
     """
 
-        - NEWLOGMSG := on when a new line has been added, off when all new lines have been
-                printed in _update
+        - NEWLOGMSG := on when a new line has been added, off when all new
+            lines have been printed in _update
         - scroll_last_line := the line to which key up scrolled to last
-        - /last_line_offset := offset from the last log message to scroll_last_line
-        - last_printed_range := the last range displayed (checked to avoid flickering)
+        - /last_line_offset := offset from the last log message to
+            scroll_last_line
+        - last_printed_range := the last range displayed (checked to avoid
+            flickering)
 
     """
 
@@ -48,7 +57,8 @@ class View:
         self._SUPRESS_INFO = False
         # self._log_lines = []  # ordered list of log lines
         # self._log_lines.filterPredicate = lambda e: "ExeUnit" in e
-        self._log_lines = self._log_lines  # reference to, may later reference filtered
+        self._log_lines = self._log_lines  # reference to, may later reference
+        #   filtered
         # self._filtered_log_lines = []  # copies of log lines filtered
         # init screen
         self._mainscreen = curses.initscr()
@@ -89,7 +99,7 @@ class View:
         when unset, locks a PredicatedList from refreshing as the new information is chronologically after to save cycles
         """
         self._console_scr._AUTOSCROLL = flagvalue
-        if flagvalue == False:
+        if flagvalue is False:
             self._log_lines.lock()
         else:
             self._log_lines.unlock()
@@ -176,11 +186,15 @@ class View:
 
         if self.NEWLOGMSG and self.AUTOSCROLL:
             if self.hardware_line.whether_print_stale():
-                self._status_scr.set_lines_to_display([self.hardware_line.print(), None])
+                self._status_scr.set_lines_to_display(
+                    [self.hardware_line.print(), None]
+                )
             self._console_scr.redraw()
             self.NEWLOGMSG = False
         if self.exeunit_line.task_running:
-            self._status_scr.set_lines_to_display([None, self.exeunit_line.print()], redraw=False)
+            self._status_scr.set_lines_to_display(
+                [None, self.exeunit_line.print()], redraw=False
+            )
             # self._status_scr.redraw()
 
         return None  # no interaction
@@ -193,7 +207,7 @@ class View:
         )
         self._status_scr.redraw()
 
-    def update_running_exeunit( self, start_time, resource, pid ):
+    def update_running_exeunit(self, start_time, resource, pid):
         if start_time is None and resource is None and pid is None:
             self.exeunit_line.reset()
         else:

@@ -1,18 +1,17 @@
 # ./controller
 # golemspi controller
 # interact with the model and the view
-from utils.colors import Colors
+# from utils.colors import Colors
 import queue
 import time
 from .events import determine_event_type_and_data
 from .events import parse_log_line
 from .events.log_events import *
-from utils import pprint_dataclass, pprint_class
-from pprint import pprint
 
 from model import Model
 from utils.mylogger import console_logger, file_logger
 from .model_queries import perform_view_updates
+
 
 class Controller:
     def __init__(self, model: Model, view, log_queue):
@@ -30,7 +29,7 @@ class Controller:
     def determine_event_type_and_data(self, log_line):
         # logic to determine event type and associated data
         parsed_log_line = parse_log_line(log_line)
-        if parsed_log_line.namespace == None:
+        if parsed_log_line.namespace is None:
             # later handle non conforming messages
             log_event = None
         else:
@@ -50,7 +49,7 @@ class Controller:
             self.model.additions.add_payment_network(**log_event.asdict())
         elif isinstance(log_event, HardwareResourcesCapEvent):
             self.model.additions.add_hardware_cap_info(**log_event.asdict())
-            file_logger.debug(self.model.hardware_resource_cap_info)
+            # file_logger.debug(self.model.hardware_resource_cap_info)
         elif isinstance(log_event, UsingSubnetEvent):
             self.model.additions.add_subnet_utilized(**log_event.asdict())
         elif isinstance(log_event, UsageCoeffsEvent):
@@ -85,19 +84,19 @@ class Controller:
                 # handle multi line log message (always a list)
                 if log_line.endswith("["):
                     while not log_line.endswith("]"):
-                        log_line += self.read_next_message()
+                        inner_line = self.read_next_message()
+                        if inner_line is not None:
+                            log_line += self.read_next_message()
 
                 self.view.add_log_line(log_line)
                 log_event = self.determine_event_type_and_data(log_line)
                 # self.view.add_log_line(log_line)
                 if log_event is not None:
                     self.process_log_event(log_event)
-
             active_flags = self.model.get_active_flags()
             perform_view_updates(self, active_flags)
             self.model.reset_view_update_flags()
 
             self.view.update()
 
-
-            time.sleep(0.01)
+            time.sleep(0.001)

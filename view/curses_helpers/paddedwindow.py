@@ -145,7 +145,6 @@ class PaddedWindow:
 
     def redraw(self, reset=False):
         """print lines in the printable_range to log console (main screen) and refresh"""
-        from datetime import datetime
 
         if self._AUTOSCROLL or reset:
             # update offset at which scrolling would resume
@@ -160,8 +159,8 @@ class PaddedWindow:
             ):  # final line after
                 self._win.addstr(
                     self._lines[offset]
-                    #                    + f": {countRows},{printable_range},{datetime.now().timestamp()}"
                     + "\n"
+                    #                    + f": {countRows},{printable_range},{datetime.now().timestamp()}" + "\n"
                 )
             # do not append newline to final line
             self._win.addstr(
