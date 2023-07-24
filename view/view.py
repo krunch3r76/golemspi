@@ -178,7 +178,7 @@ class View:
             else:
                 self._SUPRESS_WARN = False
                 self._log_lines.del_filter_predicate(predicate_name="WARN")
-            self._console_scr.redraw()
+            self._console_scr.redraw(reset=True)
         elif getch == ordinal_for_control_char("i"):
             if not self._SUPRESS_INFO:
                 self._SUPRESS_INFO = True
@@ -188,7 +188,7 @@ class View:
             else:
                 self._SUPRESS_INFO = False
                 self._log_lines.del_filter_predicate(predicate_name="INFO")
-            self._console_scr.redraw()
+            self._console_scr.redraw(reset=True)
         elif getch == ordinal_for_control_char("e"):
             if not self._SUPRESS_ERROR:
                 self._SUPRESS_ERROR = True
@@ -198,7 +198,7 @@ class View:
             else:
                 self._SUPRESS_ERROR = False
                 self._log_lines.del_filter_predicate(predicate_name="ERROR")
-            self._console_scr.redraw()
+            self._console_scr.redraw(reset=True)
         elif getch == curses.KEY_END or getch == ordinal_for_control_char("g"):
             self.AUTOSCROLL = True
             self.length_at_scrollback = len(self._log_lines)
