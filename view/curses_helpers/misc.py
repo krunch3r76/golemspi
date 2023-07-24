@@ -33,7 +33,10 @@ def sane_screen_defaults(scr):
     curses.init_pair(
         1, curses.COLOR_YELLOW, curses.COLOR_BLACK
     )  # Use COLOR_BLACK for deep black background
-    scr.bkgd(curses.color_pair(1))
+    # curses.init_pair(
+    #     2, curses.A_NORMAL, curses.A_NORMAL
+    # )  # Use COLOR_BLACK for deep black background
+    # scr.bkgd(curses.color_pair(2))
 
 
 def terminate_curses(scr):

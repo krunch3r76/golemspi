@@ -68,7 +68,7 @@ class ModelRetrievals:
         return result
 
     def get_current_exeunit_info(self):
-        """find the last pid and lookup the start time and url then return timestamp, task_package, and pid"""
+        """find the unterminated pid and lookup the start time and url then return timestamp, task_package, and pid"""
         cursor = self.model.connection.execute(
             "SELECT timestamp, activityId, pid FROM activity_pid ORDER BY activityPidId DESC LIMIT 1"
         )
@@ -81,10 +81,20 @@ class ModelRetrievals:
         pid = result[2]
 
         cursor = self.model.connection.execute(
-            "SELECT activity_hash FROM activity WHERE activityId = ?",
+            """
+            SELECT activity_hash FROM activity
+            WHERE activityId = ? AND NOT EXISTS (
+                SELECT 1 FROM activity_termination WHERE activity_termination.activityId = activity.activityId
+            )
+        """,
             (activity_id,),
         )
         result = cursor.fetchone()
+        # cursor = self.model.connection.execute(
+        #     "SELECT activity_hash FROM activity WHERE activityId = ?",
+        #     (activity_id,),
+        # )
+        # result = cursor.fetchone()
 
         if result is None:
             return None, None, None

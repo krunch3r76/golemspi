@@ -58,7 +58,7 @@ class PaddedWindow:
         self._AUTOSCROLL = True  # state of scrolling
         self.__length_at_scrollback = len(self._lines)  # length cutoff for scrollback
         self._pad = None
-        self._win.bkgd(curses.color_pair(1))
+        # self._win.bkgd(curses.color_pair(2))
         # self._last_printed_range = None  # useful for when resizing to expand down
 
     @property
@@ -178,7 +178,7 @@ class PaddedWindow:
                 for wrapped_line in wrapped_lines:
                     self._pad.insstr(row_offset, 0, wrapped_line)
                     row_offset += 1
-            curses.napms(15)
+            # curses.napms(15)
             # Copy the pad to the window
             self._pad.refresh(
                 0,
