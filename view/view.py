@@ -178,7 +178,7 @@ class View:
             else:
                 self._SUPRESS_WARN = False
                 self._log_lines.del_filter_predicate(predicate_name="WARN")
-            self._console_scr.redraw(reset=True)
+            self._console_scr.redraw()
         elif getch == ordinal_for_control_char("i"):
             if not self._SUPRESS_INFO:
                 self._SUPRESS_INFO = True
@@ -209,7 +209,7 @@ class View:
                 self._status_scr.set_lines_to_display(
                     [self.hardware_line.print(), None]
                 )
-            self._console_scr.redraw()
+            self.last_printed_range = self._console_scr.redraw()
             self.NEWLOGMSG = False
         # elif self.exeunit_line.task_running:
         #     self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])

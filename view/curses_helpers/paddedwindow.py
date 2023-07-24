@@ -145,8 +145,8 @@ class PaddedWindow:
 
         self.redraw()
 
-    def redraw(self, reset=False):
-        """print lines in the printable_range to log console (main screen) and refresh"""
+    def redraw(self, printable_range=None, refresh=True, reset=False):
+        """print lines in the printable_range to log console (main screen) and refresh, return range"""
 
         W, N, E, S = range(4)
         if self._AUTOSCROLL or reset:
@@ -180,17 +180,19 @@ class PaddedWindow:
                     row_offset += 1
             # curses.napms(15)
             # Copy the pad to the window
-            self._pad.refresh(
-                0,
-                0,
-                self._padding[N],
-                self._padding[W],
-                h - 1 + self._padding[N],
-                w - 1 + self._padding[W],
-            )
+            if refresh:
+                self._pad.refresh(
+                    0,
+                    0,
+                    self._padding[N],
+                    self._padding[W],
+                    h - 1 + self._padding[N],
+                    w - 1 + self._padding[W],
+                )
 
-            # Update the physical screen with the changes made to the pad
-            # curses.doupdate()
+        return printable_range
+        # Update the physical screen with the changes made to the pad
+        # curses.doupdate()
 
     # def redraw_(self, reset=False):
     #     """print lines in the printable_range to log console (main screen) and refresh"""
