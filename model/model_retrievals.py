@@ -75,8 +75,7 @@ class ModelRetrievals:
         result = cursor.fetchone()
 
         if result is None:
-            raise Exception("No pid in model")
-
+            return None, None, None
         time_start = result[0]
         activity_id = result[1]
         pid = result[2]
@@ -88,12 +87,14 @@ class ModelRetrievals:
         result = cursor.fetchone()
 
         if result is None:
-            raise Exception("no associated activity with pid")
+            return None, None, None
 
         activity_hash = result[0]
         agreement_details = self.get_agreement_json_by_activity_hash(activity_hash)
         try:
-            task_package = agreement_details['demand']['properties']['golem']['srv']['comp']['task_package']
+            task_package = agreement_details["demand"]["properties"]["golem"]["srv"][
+                "comp"
+            ]["task_package"]
         except:
             task_package = None
 

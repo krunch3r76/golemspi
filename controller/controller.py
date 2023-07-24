@@ -99,4 +99,4 @@ class Controller:
 
             self.view.update()
 
-            time.sleep(0.001)
+            time.sleep(0.02)

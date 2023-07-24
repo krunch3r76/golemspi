@@ -5,6 +5,8 @@ import datetime
 from decimal import Decimal
 from typing import TypeVar
 import time
+from utils.mylogger import console_logger, file_logger
+
 
 class TimestampedValue:
     def __init__(self, value):
@@ -54,6 +56,7 @@ class HardwareLine:
         Notes:
             The 'timestamp' attribute is a dictionary that maps attribute names to the timestamps
             of when they were last set."""
+
         self._subnet = (
             TimestampedValue(str(subnet))
             if subnet is not None
@@ -134,7 +137,13 @@ class HardwareLine:
     def whether_print_stale(self):
         return self._last_set_timestamp > self._last_print_timestamp
 
-    def set(self, threads=None, memory=None, storage=None, subnet=None):
+    def set(
+        self,
+        threads=None,
+        memory=None,
+        storage=None,
+        subnet=None,
+    ):
         """update attributes provided or ignore"""
         if threads is not None:
             self.threads = threads
@@ -145,6 +154,7 @@ class HardwareLine:
         if subnet is not None:
             self.subnet = subnet
         self._last_set_timestamp = datetime.datetime.now().timestamp()
+
 
 class ExeUnitLine:
     """
@@ -162,9 +172,11 @@ class ExeUnitLine:
         self._time_start = None
         self._task_url = None
         self._pid = None
+        self._cpu_percent = None
+        self._duration = None
+        self._mem_kb = None
 
-    def _get_elapsed_time(self, start_time, current_time):
-        elapsed_seconds = current_time - start_time
+    def _seconds_to_human_readable_time(self, elapsed_seconds):
         hours = int(elapsed_seconds // 3600)
         minutes = int((elapsed_seconds % 3600) // 60)
         seconds = int(elapsed_seconds % 60)
@@ -176,21 +188,46 @@ class ExeUnitLine:
         else:
             return f"{seconds} sec"
 
+    def _get_elapsed_time(self, start_time, current_time):
+        elapsed_seconds = current_time - start_time
+        return self._seconds_to_human_readable_time(elapsed_seconds)
+
     def print(self):
         if not self.task_running:
-            return f"NO TASK RUNNING CURRENTLY"
+            return "NO TASK RUNNING CURRENTLY"
         else:
             # calculate time elasped since start time
-            elapsed_time = self._get_elapsed_time(self._time_start, time.time())
-            return f"resource: {self._task_url:<26}\tpid: {self._pid:<26}\ttime_running: {elapsed_time:<26}"
+            # elapsed_time = self._get_elapsed_time(self._time_start, time.time())
+            elapsed_time = self._seconds_to_human_readable_time(self._duration)
+            file_logger.debug(
+                f"""{type(self._task_url)},{type(self._pid)},{type({elapsed_time})},{type(self._cpu_perc)},{type(self._mem_kb)}...duration type: {type(self._duration)}"""
+            )
+            return f"resource: {self._task_url:<20}\tpid: {self._pid:<15}\ttime_running: {elapsed_time:<15} cpu util (%): {self._cpu_perc:<15} memory used (kb): {self._mem_kb:<20}"
 
-    def set(self, time_start, task_url, pid):
-        self._time_start = time_start
-        if task_url is not None: 
+    def set(
+        self,
+        time_start=None,
+        task_url=None,
+        pid=None,
+        duration=0,
+        cpu_perc=0.0,
+        mem_kb=0.0,
+    ):
+        if self._time_start is not None:
+            self._time_start = time_start
+        if task_url is not None:
             self._task_url = task_url
-        else:
+        elif self._task_url is None:
             task_url = "unknown"
-        self._pid = pid
+        if pid is not None:
+            self._pid = pid
+        if duration is not None:
+            self._duration = duration
+        if cpu_perc is not None:
+            self._cpu_perc = cpu_perc
+        if mem_kb is not None:
+            self._mem_kb = mem_kb
+
         self.task_running = True
 
     def reset(self):
@@ -198,4 +235,6 @@ class ExeUnitLine:
         self._time_start = None
         self._task_url = None
         self._pid = None
-
+        self._duration = 0
+        self._cpu_perc = 0.0
+        self._mem_kb = 0.0

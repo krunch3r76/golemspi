@@ -205,10 +205,10 @@ class View:
                 )
             self._console_scr.redraw()
             self.NEWLOGMSG = False
-        elif self.exeunit_line.task_running:
-            self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
-            curses.napms(50)
-            # self._status_scr.redraw()
+        # elif self.exeunit_line.task_running:
+        #     self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
+        #     curses.napms(50)
+        # self._status_scr.redraw()
 
         return None  # no interaction
 
@@ -225,6 +225,12 @@ class View:
             self.exeunit_line.reset()
         else:
             self.exeunit_line.set(start_time, resource, pid)
+
+    def update_running_exeunit_utilization(self, duration, cpu_percentage, mem_kb):
+        if self.exeunit_line.task_running:
+            self.exeunit_line.set(None, None, None, duration, cpu_percentage, mem_kb)
+            self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
+            # curses.napms(50)
 
     def shutdown(self):
         terminate_curses(self._mainscreen)

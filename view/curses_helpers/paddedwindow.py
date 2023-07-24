@@ -153,7 +153,7 @@ class PaddedWindow:
             self._length_at_scrollback = len(self._lines)
 
         printable_range = self._printable_range
-        file_logger.debug(f"{printable_range}")
+        # file_logger.debug(f"{printable_range}")
         if printable_range[1] - printable_range[0] < 1:
             printable_range = None
 
