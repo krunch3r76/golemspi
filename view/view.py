@@ -10,6 +10,8 @@ import time
 from enum import auto
 
 from .predicatedlist import PredicatedList
+from view.curses_helpers.misc import ordinal_for_control_char
+
 from utils.mylogger import file_logger
 
 # from processqueue import ProcessQueue, ProcessTerminated
@@ -167,36 +169,36 @@ class View:
 
         #         self._console_scr.set_lines_to_display(lines)
         #     pass
-        # elif getch == ordinal_for_control_char("w"):
-        #     if not self._SUPRESS_WARN:
-        #         self._SUPRESS_WARN = True
-        #         self._log_lines.add_filter_predicate(
-        #             predicate_name="WARN", predicate_lambda=lambda e: "WARN" not in e
-        #         )
-        #     else:
-        #         self._SUPRESS_WARN = False
-        #         self._log_lines.del_filter_predicate(predicate_name="WARN")
-        #     self._console_scr.redraw(reset=True)
-        # elif getch == ordinal_for_control_char("i"):
-        #     if not self._SUPRESS_INFO:
-        #         self._SUPRESS_INFO = True
-        #         self._log_lines.add_filter_predicate(
-        #             predicate_name="INFO", predicate_lambda=lambda e: "INFO" not in e
-        #         )
-        #     else:
-        #         self._SUPRESS_INFO = False
-        #         self._log_lines.del_filter_predicate(predicate_name="INFO")
-        #     self._console_scr.redraw()
-        # elif getch == ordinal_for_control_char("e"):
-        #     if not self._SUPRESS_ERROR:
-        #         self._SUPRESS_ERROR = True
-        #         self._log_lines.add_filter_predicate(
-        #             predicate_name="ERROR", predicate_lambda=lambda e: "ERROR" not in e
-        #         )
-        #     else:
-        #         self._SUPRESS_ERROR = False
-        #         self._log_lines.del_filter_predicate(predicate_name="ERROR")
-        #     self._console_scr.redraw()
+        elif getch == ordinal_for_control_char("w"):
+            if not self._SUPRESS_WARN:
+                self._SUPRESS_WARN = True
+                self._log_lines.add_filter_predicate(
+                    predicate_name="WARN", predicate_lambda=lambda e: "WARN" not in e
+                )
+            else:
+                self._SUPRESS_WARN = False
+                self._log_lines.del_filter_predicate(predicate_name="WARN")
+            self._console_scr.redraw(reset=True)
+        elif getch == ordinal_for_control_char("i"):
+            if not self._SUPRESS_INFO:
+                self._SUPRESS_INFO = True
+                self._log_lines.add_filter_predicate(
+                    predicate_name="INFO", predicate_lambda=lambda e: "INFO" not in e
+                )
+            else:
+                self._SUPRESS_INFO = False
+                self._log_lines.del_filter_predicate(predicate_name="INFO")
+            self._console_scr.redraw()
+        elif getch == ordinal_for_control_char("e"):
+            if not self._SUPRESS_ERROR:
+                self._SUPRESS_ERROR = True
+                self._log_lines.add_filter_predicate(
+                    predicate_name="ERROR", predicate_lambda=lambda e: "ERROR" not in e
+                )
+            else:
+                self._SUPRESS_ERROR = False
+                self._log_lines.del_filter_predicate(predicate_name="ERROR")
+            self._console_scr.redraw()
 
         if self.NEWLOGMSG and self.AUTOSCROLL:
             if self.hardware_line.whether_print_stale():

@@ -79,6 +79,7 @@ class HardwareLine:
         )
         self._last_print_timestamp = datetime.datetime.now().timestamp() - 1
         self._last_set_timestamp = datetime.datetime.now().timestamp()
+        self._initializing_count = 1
 
     @property
     def subnet(self):
@@ -113,6 +114,14 @@ class HardwareLine:
         self._storage.value = value
 
     def print(self):
+        if all(var is None for var in [self.subnet, self.memory, self.storage]):
+            # dots = "." * self._initializing_count
+            # self._initializing_count += 1
+            # if self._initializing_count % 4 == 0:
+            #     self._initializing_count = 1
+            # return f"initializing{dots}"
+            return "initializing"
+
         subnet = f"subnet: {self.subnet}" if self.subnet is not None else "subnet: ?"
 
         threads = (
