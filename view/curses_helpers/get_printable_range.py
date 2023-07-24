@@ -52,7 +52,7 @@ def _get_printable_range_wrapped(
     if top_offset < 0:
         top_offset = 0
 
-    file_logger.debug(f"{top_offset}, {k_last_line_offset}")
+    # file_logger.debug(f"{top_offset}, {k_last_line_offset}")
     return (top_offset, k_last_line_offset)
 
 

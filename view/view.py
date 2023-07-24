@@ -206,9 +206,8 @@ class View:
             self._console_scr.redraw()
             self.NEWLOGMSG = False
         elif self.exeunit_line.task_running:
-            self._status_scr.set_lines_to_display(
-                [None, self.exeunit_line.print()], redraw=True
-            )
+            self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
+            curses.napms(10)
             # self._status_scr.redraw()
 
         return None  # no interaction
