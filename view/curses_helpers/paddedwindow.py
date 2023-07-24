@@ -58,6 +58,7 @@ class PaddedWindow:
         self._AUTOSCROLL = True  # state of scrolling
         self.__length_at_scrollback = len(self._lines)  # length cutoff for scrollback
         self._pad = None
+        self._win.bkgd(curses.color_pair(1))
         # self._last_printed_range = None  # useful for when resizing to expand down
 
     @property
@@ -165,6 +166,7 @@ class PaddedWindow:
             if self._pad is None or self._pad.getmaxyx() != (h, w):
                 # self._pad = curses.newpad(h + 1, w + 0)
                 self._pad = curses.newpad(h + 0, w + 0)
+                self._pad.bkgd(curses.color_pair(1))
             else:
                 # Clear the pad before adding new content
                 self._pad.clear()

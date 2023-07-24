@@ -29,6 +29,11 @@ def sane_screen_defaults(scr):
     scr.scrollok(True)
     scr.keypad(True)
     curses.delay_output(100)
+    curses.start_color()
+    curses.init_pair(
+        1, curses.COLOR_YELLOW, curses.COLOR_BLACK
+    )  # Use COLOR_BLACK for deep black background
+    scr.bkgd(curses.color_pair(1))
 
 
 def terminate_curses(scr):
