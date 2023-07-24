@@ -153,8 +153,10 @@ class PaddedWindow:
             self._length_at_scrollback = len(self._lines)
 
         printable_range = self._printable_range
+        file_logger.debug(f"{printable_range}")
         if printable_range[1] - printable_range[0] < 1:
             printable_range = None
+
         if printable_range is not None:
             # Get dimensions of the window
             (h, w) = self._win.getmaxyx()
@@ -163,9 +165,9 @@ class PaddedWindow:
             if self._pad is None or self._pad.getmaxyx() != (h, w):
                 # self._pad = curses.newpad(h + 1, w + 0)
                 self._pad = curses.newpad(h + 0, w + 0)
-
-            # Clear the pad before adding new content
-            self._pad.clear()
+            else:
+                # Clear the pad before adding new content
+                self._pad.clear()
             # self._pad = curses.newpad(h + 0, w + 0)
 
             row_offset = 0
@@ -174,9 +176,9 @@ class PaddedWindow:
                 for wrapped_line in wrapped_lines:
                     self._pad.insstr(row_offset, 0, wrapped_line)
                     row_offset += 1
-
+            curses.napms(15)
             # Copy the pad to the window
-            self._pad.noutrefresh(
+            self._pad.refresh(
                 0,
                 0,
                 self._padding[N],
@@ -186,7 +188,7 @@ class PaddedWindow:
             )
 
             # Update the physical screen with the changes made to the pad
-            curses.doupdate()
+            # curses.doupdate()
 
     # def redraw_(self, reset=False):
     #     """print lines in the printable_range to log console (main screen) and refresh"""
@@ -252,8 +254,9 @@ class PaddedWindow:
         * update the display immediately (sync actual screen with previous drawing/deleting
         methods
         """
-        self._win.noutrefresh()
-        curses.doupdate()
+        self._win.refresh()
+        # self._win.noutrefresh()
+        # curses.doupdate()
 
     def getmaxyx(self):
         # wrap getmaxyx
