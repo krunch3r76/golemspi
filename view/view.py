@@ -237,6 +237,7 @@ class View:
             self.exeunit_line.set(None, None, None, duration, cpu_percentage, mem_kb)
             try:
                 self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
+                curses.napms(55)
             except TypeError:
                 file_logger.debug(
                     f"TypeError printing exeunit line: duration {duration}, cpu_percentage {cpu_percentage}, mem_kib {mem_kb}"

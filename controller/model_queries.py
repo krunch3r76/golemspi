@@ -62,7 +62,7 @@ def perform_view_updates(controller, active_flags):
                 return None, None
 
         cpu, mem = get_cpu_memory(pid)
-        time.sleep(0.2)
+        # time.sleep(0.001)
         controller.view.update_running_exeunit_utilization(
             time.time() - time_start, cpu, mem
         )

@@ -178,8 +178,12 @@ class PaddedWindow:
                 for wrapped_line in wrapped_lines:
                     self._pad.insstr(row_offset, 0, wrapped_line)
                     row_offset += 1
+
             # curses.napms(15)
             # Copy the pad to the window
+            if printable_range[1] - printable_range[0] > 9:
+                curses.napms(55)
+
             if refresh:
                 self._pad.refresh(
                     0,
@@ -189,7 +193,6 @@ class PaddedWindow:
                     h - 1 + self._padding[N],
                     w - 1 + self._padding[W],
                 )
-
         return printable_range
         # Update the physical screen with the changes made to the pad
         # curses.doupdate()
