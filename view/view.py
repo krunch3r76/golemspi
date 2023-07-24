@@ -229,7 +229,12 @@ class View:
     def update_running_exeunit_utilization(self, duration, cpu_percentage, mem_kb):
         if self.exeunit_line.task_running:
             self.exeunit_line.set(None, None, None, duration, cpu_percentage, mem_kb)
-            self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
+            try:
+                self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
+            except TypeError:
+                file_logger.debug(
+                    f"TypeError printing exeunit line: duration {duration}, cpu_percentage {cpu_percentage}, mem_kib {mem_kb}"
+                )
             # curses.napms(50)
 
     def shutdown(self):

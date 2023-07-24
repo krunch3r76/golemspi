@@ -42,6 +42,7 @@ trap cleanup SIGINT
 # Run the command in the background
 run_in_background "$@"
 
-python3 ./golemspi.py "$logfile"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+python3 $script_dir/golemspi.py "$logfile"
 
 cleanup  # Call the cleanup function to ensure the background process is killed on normal exit
