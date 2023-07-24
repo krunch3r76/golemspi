@@ -44,7 +44,7 @@ class View:
         - /last_line_offset := offset from the last log message to
             scroll_last_line
         - last_printed_range := the last range displayed (checked to avoid
-            flickering)
+            flickering) TODO
 
     """
 
@@ -198,6 +198,10 @@ class View:
             else:
                 self._SUPRESS_ERROR = False
                 self._log_lines.del_filter_predicate(predicate_name="ERROR")
+            self._console_scr.redraw()
+        elif getch == curses.KEY_END or getch == ordinal_for_control_char("g"):
+            self.AUTOSCROLL = True
+            self.length_at_scrollback = len(self._log_lines)
             self._console_scr.redraw()
 
         if self.NEWLOGMSG and self.AUTOSCROLL:
