@@ -38,31 +38,38 @@ def perform_view_updates(controller, active_flags):
     for active_flag in active_flags:
         _interpret_active_flag(controller, active_flag)
     # check with model if there is a running exeunit
-    time_start, _, pid = controller.model.retrievals.get_current_exeunit_info()
+    if controller.subprocess_start_time is None:
+        controller.subprocess_start_time = time.perf_counter()
 
-    if pid:
-        # run a subprocess to collect cpu and memory usage
+    if time.perf_counter() - controller.subprocess_start_time > 0.9:
+        time_start, _, pid = controller.model.retrievals.get_current_exeunit_info()
 
-        def get_cpu_memory(pid):
-            # Command to get cpu and memory usage (in percentage and kilobytes, respectively)
-            cmd = f"ps -p {pid} -o %cpu,rss"
-            try:
-                output = (
-                    subprocess.check_output(cmd, shell=True).decode("utf-8").split("\n")
-                )
+        if pid:
+            # run a subprocess to collect cpu and memory usage
 
-                # Process the output
-                values = output[1].split()
+            def get_cpu_memory(pid):
+                # Command to get cpu and memory usage (in percentage and kilobytes, respectively)
+                cmd = f"ps -p {pid} -o %cpu,rss"
+                try:
+                    output = (
+                        subprocess.check_output(cmd, shell=True)
+                        .decode("utf-8")
+                        .split("\n")
+                    )
 
-                cpu_usage = values[0]
-                mem_usage = values[1]
+                    # Process the output
+                    values = output[1].split()
 
-                return cpu_usage, mem_usage
-            except subprocess.CalledProcessError:
-                return None, None
+                    cpu_usage = values[0]
+                    mem_usage = values[1]
 
-        cpu, mem = get_cpu_memory(pid)
-        # time.sleep(0.001)
-        controller.view.update_running_exeunit_utilization(
-            time.time() - time_start, cpu, mem
-        )
+                    return cpu_usage, mem_usage
+                except subprocess.CalledProcessError:
+                    return None, None
+
+            cpu, mem = get_cpu_memory(pid)
+            # time.sleep(0.001)
+            controller.view.update_running_exeunit_utilization(
+                time.time() - time_start, cpu, mem
+            )
+            controller.subprocess_start_time = None

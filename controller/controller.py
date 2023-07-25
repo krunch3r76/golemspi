@@ -18,6 +18,7 @@ class Controller:
         self.model = model
         self.view = view
         self.current_message = log_queue
+        self.subprocess_start_time = None
 
     def read_next_message(self):
         try:
