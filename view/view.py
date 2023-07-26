@@ -211,10 +211,6 @@ class View:
                 )
             self.last_printed_range = self._console_scr.redraw()
             self.NEWLOGMSG = False
-        # elif self.exeunit_line.task_running:
-        #     self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
-        #     curses.napms(50)
-        # self._status_scr.redraw()
 
         return None  # no interaction
 
@@ -237,11 +233,13 @@ class View:
             self.exeunit_line.set(None, None, None, duration, cpu_percentage, mem_kb)
             try:
                 self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
-                curses.napms(55)
             except TypeError:
-                file_logger.debug(
-                    f"TypeError printing exeunit line: duration {duration}, cpu_percentage {cpu_percentage}, mem_kib {mem_kb}"
-                )
+                file_logger("unexpected typerror ignoring")
+            curses.napms(35)
+            # except TypeError:
+            #     file_logger.debug(
+            #         f"TypeError printing exeunit line: duration {duration}, cpu_percentage {cpu_percentage}, mem_kib {mem_kb}"
+            #     )
             # curses.napms(50)
 
     def shutdown(self):

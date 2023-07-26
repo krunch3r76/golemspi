@@ -19,6 +19,7 @@ class Controller:
         self.view = view
         self.current_message = log_queue
         self.subprocess_start_time = None
+        self.queue_read_start_time = None
 
     def read_next_message(self):
         try:
@@ -79,25 +80,35 @@ class Controller:
         #     "Controller started, reading log messages", color=Colors.RED_BG
         # )
         while True:
-            log_line = self.read_next_message()
-            if log_line is not None:
-                # print(log_line)
-                # handle multi line log message (always a list)
-                if log_line.endswith("["):
-                    while not log_line.endswith("]"):
-                        inner_line = self.read_next_message()
-                        if inner_line is not None:
-                            log_line += self.read_next_message()
+            # use a performance counter to give time for queue to fill
+            if self.queue_read_start_time is None:
+                self.queue_read_start_time = time.perf_counter()
 
-                self.view.add_log_line(log_line)
-                log_event = self.determine_event_type_and_data(log_line)
-                # self.view.add_log_line(log_line)
-                if log_event is not None:
-                    self.process_log_event(log_event)
-            active_flags = self.model.get_active_flags()
-            perform_view_updates(self, active_flags)
-            self.model.reset_view_update_flags()
+            if time.perf_counter() - self.queue_read_start_time > 0.05:
+                log_line = self.read_next_message()
+                k_log_line_read_limit = 20
+                log_line_count = 0
 
-            self.view.update()
+                while log_line is not None and log_line_count < k_log_line_read_limit:
+                    # read a bunch of log lines before processing
+                    log_line_count += 1
+                    # print(log_line)
+                    # handle multi line log message (always a list)
+                    if log_line.endswith("["):
+                        while not log_line.endswith("]"):
+                            inner_line = self.read_next_message()
+                            if inner_line is not None:
+                                log_line += self.read_next_message()
+                    self.view.add_log_line(log_line)
+                    log_event = self.determine_event_type_and_data(log_line)
+                    if log_event is not None:
+                        self.process_log_event(log_event)
+                    log_line = self.read_next_message()
+
+                active_flags = self.model.get_active_flags()
+                perform_view_updates(self, active_flags)
+                self.model.reset_view_update_flags()
+                self.queue_read_start_time = None
+                self.view.update()
 
             time.sleep(0.002)

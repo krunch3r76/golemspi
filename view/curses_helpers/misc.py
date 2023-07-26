@@ -56,7 +56,6 @@ def resize_on_key_resize(scr, subwindows=None, resizing=False):
     # for example, a line written beyond the actual columns available
     # will throw but this is not the case as long as the underlying
     # screen is correctly updated no matter how long / how many columns
-    file_logger.debug("resizing")
     curses.update_lines_cols()
     # curses.resizeterm(curses.LINES, curses.COLS)
     scr.resize(curses.LINES, curses.COLS)

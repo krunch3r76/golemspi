@@ -179,10 +179,9 @@ class PaddedWindow:
                     self._pad.insstr(row_offset, 0, wrapped_line)
                     row_offset += 1
 
-            # curses.napms(15)
             # Copy the pad to the window
             if printable_range[1] - printable_range[0] > 9:
-                curses.napms(55)
+                curses.napms(5)
 
             if refresh:
                 self._pad.refresh(
