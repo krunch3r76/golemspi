@@ -212,7 +212,7 @@ class ExeUnitLine:
                 rv = f"resource: {self._task_url:<20}\tpid: {self._pid:<15}\ttime_running: {elapsed_time:<15} cpu util (%): {self._cpu_perc:<15} memory used (kb): {self._mem_kb:<20}"
             except TypeError:
                 file_logger.debug(
-                    "type _task_url: {type(self._task_url)})\ttype pid type({self._pid})\ttype elapsed_time {type(elapsed_time)} type cpu util {type(self._cpu_perc)}, type mem used: {type(self._mem_kb)}"
+                    f"type _task_url: {type(self._task_url)})\ttype pid type({self._pid})\ttype elapsed_time {type(elapsed_time)} type cpu util {type(self._cpu_perc)}, type mem used: {type(self._mem_kb)}"
                 )
                 rv = ""
             return rv

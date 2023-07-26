@@ -74,6 +74,8 @@ class Controller:
             self.model.updates.update_final_cost_for_activity_information(
                 **log_event.asdict()
             )
+        elif isinstance(log_event, IdentityEvent):
+            file_logger.debug(log_event.asdict())
 
     def __call__(self):
         # Colors.print_color(
@@ -102,13 +104,19 @@ class Controller:
                     self.view.add_log_line(log_line)
                     log_event = self.determine_event_type_and_data(log_line)
                     if log_event is not None:
-                        self.process_log_event(log_event)
+                        self.process_log_event(log_event)  # add to model
                     log_line = self.read_next_message()
 
+                # reset read queue timer
+                self.queue_read_start_time = None
+
+                # refer back to model
+                # to perform any updates based on active_flags
                 active_flags = self.model.get_active_flags()
                 perform_view_updates(self, active_flags)
                 self.model.reset_view_update_flags()
-                self.queue_read_start_time = None
+
+                # refresh view
                 self.view.update()
 
             time.sleep(0.002)

@@ -33,7 +33,6 @@ class ModelAdditions:
             INSERT INTO agreement (timestamp, hash, address, subscription) VALUES (?, ?, ?, ?)
         """
         values = (unixtimestamp, agreement_hash, requestor_address, subscription)
-
         self.model.connection.execute(query, values)
 
         # Optional: Update the model or perform any additional logic
@@ -173,6 +172,7 @@ class ModelAdditions:
             VALUES (?, ?, ?, ?, ?, ?)
         """
         values = (unixtimestamp, mode, address, driver, network, token)
+        file_logger.debug(f"{values}")
         self.conn.execute(query, values)
 
     def add_payment_accounts(self, timestamp, accounts):
@@ -196,3 +196,5 @@ class ModelAdditions:
 
     def add_payment_network(self, timestamp, payment_network):
         self.model.payment_networks.append(payment_network)
+        self.model.view_update_flags["payment network"] = True
+        file_logger.debug(payment_network)

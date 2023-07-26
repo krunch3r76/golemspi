@@ -1,7 +1,6 @@
 from . import connection
 
 
-
 def create_tables():
     connection.execute(
         """

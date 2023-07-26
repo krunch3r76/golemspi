@@ -222,9 +222,10 @@ class View:
         )
         self._status_scr.redraw()
 
-    def update_running_exeunit(self, start_time, resource, pid):
+    def update_running_exeunit(self, start_time, resource, pid, termination=False):
         if start_time is None and resource is None and pid is None:
             self.exeunit_line.reset()
+            self._status_scr.set_lines_to_display([None, self.exeunit_line.print()])
         else:
             self.exeunit_line.set(start_time, resource, pid)
 
@@ -241,6 +242,9 @@ class View:
             #         f"TypeError printing exeunit line: duration {duration}, cpu_percentage {cpu_percentage}, mem_kib {mem_kb}"
             #     )
             # curses.napms(50)
+
+    def update_payment_network(self, payment_network, payment_address, token):
+        file_logger.debug(f"{payment_network} {payment_address} {token}")
 
     def shutdown(self):
         terminate_curses(self._mainscreen)

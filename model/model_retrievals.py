@@ -4,6 +4,8 @@ import json
 from .json_utils import json_loadf
 from collections import OrderedDict
 
+from utils.mylogger import console_logger, file_logger
+
 
 class ModelRetrievals:
     def __init__(self, model):
@@ -109,3 +111,49 @@ class ModelRetrievals:
             task_package = None
 
         return time_start, task_package, pid
+
+    def get_payment_network(self):
+        """determine the payment network if possible and return either mainnet or testnet or None"""
+        payment_network = None
+        if any(
+            network in self.model.payment_networks
+            for network in ["rinkeby", "mumbai", "goerli"]
+        ):
+            payment_network = "testnet"
+        elif any(
+            network in self.mdoel.payment_networks for network in ["mainnet", "polygon"]
+        ):
+            payment_network = "mainnet"
+        return payment_network
+
+    def get_payment_account_address_info_on_network(self, networks):
+        # Convert the list of networks to a tuple, which can be used in a SQL query
+        networks_tuple = tuple(networks)
+
+        # Generate placeholders for each network in the list
+        placeholders = ", ".join("?" for network in networks)
+
+        # Execute the SQL query
+        cursor = self.model.connection.execute(
+            f"""
+            SELECT address, token
+            FROM initialized_payment_accounts
+            WHERE network IN ({placeholders})
+            ORDER BY initialized_account_id DESC
+            LIMIT 1
+            """,
+            networks_tuple,
+        )
+
+        # Fetch the first (and only) row from the results
+        result = cursor.fetchone()
+        file_logger.debug(f"{result}")
+        if result is None:
+            # No matching record was found
+            return None
+
+        # Unpack the result into variables
+        address, token = result
+
+        # Return the address and token as a tuple
+        return address, token
