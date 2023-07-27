@@ -31,7 +31,7 @@ def _interpret_active_flag(controller, active_flag):
         # controller.view._status_scr.set_lines_to_display(
         #     [None, controller.view.exeunit_line.print()]
         # )
-        controller.view._status_scr.redraw()
+        # controller.view._status_scr.redraw()
     if active_flag == "payment network":
         payment_network = controller.model.retrievals.get_payment_network()
         payment_networks = controller.model.payment_networks
