@@ -32,7 +32,9 @@ touch "$logfile"
 # Function to run the command in the background
 run_in_background() {
     CMD="golemsp run $@"
-    $CMD > "$logfile" 2>&1 &
+
+    # $CMD > "$logfile" 2>&1 &
+    $CMD 2>&1 | tee -a "$logfile" 2>/dev/null
     command_pid=$!
 }
 
@@ -41,7 +43,7 @@ trap cleanup SIGINT
 
 # Run the command in the background
 run_in_background "$@"
-
+sleep 0.01
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 python3 $script_dir/golemspi.py "$logfile"
 

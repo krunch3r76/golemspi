@@ -81,6 +81,7 @@ class Controller:
         # Colors.print_color(
         #     "Controller started, reading log messages", color=Colors.RED_BG
         # )
+        k_log_line_read_limit = 1
         while True:
             # use a performance counter to give time for queue to fill
             if self.queue_read_start_time is None:
@@ -88,9 +89,7 @@ class Controller:
 
             if time.perf_counter() - self.queue_read_start_time > 0.05:
                 log_line = self.read_next_message()
-                k_log_line_read_limit = 20
                 log_line_count = 0
-
                 while log_line is not None and log_line_count < k_log_line_read_limit:
                     # read a bunch of log lines before processing
                     log_line_count += 1
@@ -105,7 +104,8 @@ class Controller:
                     log_event = self.determine_event_type_and_data(log_line)
                     if log_event is not None:
                         self.process_log_event(log_event)  # add to model
-                    log_line = self.read_next_message()
+                    if log_line_count < k_log_line_read_limit:
+                        log_line = self.read_next_message()
 
                 # reset read queue timer
                 self.queue_read_start_time = None

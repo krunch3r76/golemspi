@@ -66,13 +66,20 @@ class NcursesWindow(_NcursesWindow):
             while rows_available_to_write() > 0 and count_lines_unwritten() > 0:
                 next_line_index = self._last_line_index + 1
                 next_line = self._lines[next_line_index]
-                next_line_wrapped = textwrap.wrap(next_line, self._win_width)
+                if next_line != "":
+                    next_line_wrapped = textwrap.wrap(next_line, self._win_width)
+                else:
+                    next_line_wrapped = [""]
                 rows_needed_for_writing = len(next_line_wrapped)
                 row_cursor = self._row_of_last_line_displayed + 1
+
                 if rows_available_to_write() < rows_needed_for_writing:
+                    # scroll lines
                     lines_to_scroll = rows_needed_for_writing - rows_available_to_write
                     self._window.scroll(lines_to_scroll)
                     row_cursor -= lines_to_scroll
+
+                # write lines to available space
                 for line in next_line_wrapped:
                     self._window.move(row_cursor, 0)
                     # self._window.clrtoeol()
@@ -94,7 +101,6 @@ class NcursesWindow(_NcursesWindow):
                     self._window.insstr(row_cursor, 0, line)
                     row_cursor += 1
                     self._last_line_index = next_line_index
-                self._window.refresh()
 
         elif clear:
             self._window.clear()
@@ -147,7 +153,7 @@ class NcursesWindow(_NcursesWindow):
             #     line for sublist in buffer for line in sublist
             # ]  # Flatten the list
 
-            self._window.refresh()
+        self._window.refresh()
 
     def scroll_up(self, n=1):
         if self._last_line_index - n >= 0 and self._blank_rowcount() == 0:
