@@ -33,8 +33,8 @@ touch "$logfile"
 run_in_background() {
     CMD="golemsp run $@"
 
-    # $CMD > "$logfile" 2>&1 &
-    $CMD 2>&1 | tee -a "$logfile" 2>/dev/null
+    $CMD > "$logfile" 2>&1 &
+    # $CMD 2>&1 | tee -a "$logfile" 2>/dev/null
     command_pid=$!
 }
 

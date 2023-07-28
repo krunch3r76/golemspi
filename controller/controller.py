@@ -81,7 +81,7 @@ class Controller:
         # Colors.print_color(
         #     "Controller started, reading log messages", color=Colors.RED_BG
         # )
-        k_log_line_read_limit = 1
+        k_log_line_read_limit = 10
         while True:
             # use a performance counter to give time for queue to fill
             if self.queue_read_start_time is None:
@@ -93,7 +93,6 @@ class Controller:
                 while log_line is not None and log_line_count < k_log_line_read_limit:
                     # read a bunch of log lines before processing
                     log_line_count += 1
-                    # print(log_line)
                     # handle multi line log message (always a list)
                     if log_line.endswith("["):
                         while not log_line.endswith("]"):

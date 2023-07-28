@@ -73,7 +73,6 @@ class FileQueue:
 
 if __name__ == "__main__":
     import sys
-    import time
     import queue
 
     fileQueue = FileQueue(sys.argv[1])
