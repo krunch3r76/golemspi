@@ -86,9 +86,9 @@ class Controller:
             if self.queue_read_start_time is None:
                 self.queue_read_start_time = time.perf_counter()
 
-            if time.perf_counter() - self.queue_read_start_time > 0.05:
+            if time.perf_counter() - self.queue_read_start_time > 0.01:
                 log_line = self.read_next_message()
-                k_log_line_read_limit = 20
+                k_log_line_read_limit = 10
                 log_line_count = 0
 
                 while log_line is not None and log_line_count < k_log_line_read_limit:
@@ -105,7 +105,8 @@ class Controller:
                     log_event = self.determine_event_type_and_data(log_line)
                     if log_event is not None:
                         self.process_log_event(log_event)  # add to model
-                    log_line = self.read_next_message()
+                    if log_line_count < k_log_line_read_limit:
+                        log_line = self.read_next_message()
 
                 # reset read queue timer
                 self.queue_read_start_time = None
