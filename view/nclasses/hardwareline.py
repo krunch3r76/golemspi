@@ -209,7 +209,7 @@ class ExeUnitLine:
             # elapsed_time = self._get_elapsed_time(self._time_start, time.time())
             elapsed_time = self._seconds_to_human_readable_time(self._duration)
             try:
-                rv = f"resource: {self._task_url:<20}\tpid: {self._pid:<15}\ttime_running: {elapsed_time:<15} cpu util (%): {self._cpu_perc:<15} memory used (kb): {self._mem_kb:<20}"
+                rv = f"resource: {self._task_url:<20}\tpid: {self._pid:<15}\ttime_running: {elapsed_time:<15} cpu util (%): {self._cpu_perc:<15} memory used (kb): {self._mem_kb:<20,}"
             except TypeError:
                 file_logger.debug(
                     f"type _task_url: {type(self._task_url)})\ttype pid type({self._pid})\ttype elapsed_time {type(elapsed_time)} type cpu util {type(self._cpu_perc)}, type mem used: {type(self._mem_kb)}"
@@ -225,7 +225,7 @@ class ExeUnitLine:
         pid=None,
         duration=0,
         cpu_perc=0.0,
-        mem_kb=0.0,
+        mem_kb=0,
     ):
         if self._time_start is not None:
             self._time_start = time_start
@@ -251,4 +251,4 @@ class ExeUnitLine:
         self._pid = None
         self._duration = 0
         self._cpu_perc = 0.0
-        self._mem_kb = 0.0
+        self._mem_kb = 0

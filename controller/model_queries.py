@@ -90,7 +90,7 @@ def perform_view_updates(controller, active_flags):
 
             def get_cpu_memory(pid):
                 result = subprocess.run(
-                    ["ps", "-p", str(pid), "-o", "pcpu,pmem"],
+                    ["ps", "-p", str(pid), "-o", "pcpu,rss"],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
@@ -98,7 +98,7 @@ def perform_view_updates(controller, active_flags):
                 lines = result.stdout.splitlines()
                 if len(lines) >= 2:
                     cpu, mem = lines[1].strip().split()
-                    return float(cpu), float(mem)
+                    return float(cpu), int(mem)
                 else:
                     return None, None
 
