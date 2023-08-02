@@ -80,6 +80,14 @@ def perform_view_updates(controller, active_flags):
 
                 return None  # No vmrt process found
 
+            def get_vmrt_pid():
+                # Get PID of the process running vmrt
+                result = subprocess.run(
+                    ["pgrep", "vmrt"], stdout=subprocess.PIPE, text=True
+                )
+                pid = result.stdout.strip()
+                return int(pid) if pid else None
+
             def get_cpu_memory(pid):
                 result = subprocess.run(
                     ["ps", "-p", str(pid), "-o", "pcpu,pmem"],
@@ -94,9 +102,14 @@ def perform_view_updates(controller, active_flags):
                 else:
                     return None, None
 
-            cpu, mem = get_cpu_memory(pid)
-            # time.sleep(0.001)
-            controller.view.update_running_exeunit_utilization(
-                time.time() - time_start, cpu, mem
-            )
-            controller.subprocess_start_time = None
+            vmrt_pid = get_vmrt_child_pid(pid)
+            if vmrt_pid is None:  # If the child process was not found
+                vmrt_pid = get_vmrt_pid()  # Try to find the process running vmrt
+
+            if vmrt_pid is not None:
+                cpu, mem = get_cpu_memory(vmrt_pid)
+                # time.sleep(0.001)
+                controller.view.update_running_exeunit_utilization(
+                    time.time() - time_start, cpu, mem
+                )
+        controller.subprocess_start_time = None
