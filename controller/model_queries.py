@@ -61,24 +61,37 @@ def perform_view_updates(controller, active_flags):
         if pid:  # implies running exeunit
             # run a subprocess to collect cpu and memory usage
 
-            def get_cpu_memory(pid):
-                # Command to get cpu and memory usage (in percentage and kilobytes, respectively)
-                cmd = f"ps -p {pid} -o %cpu,rss"
-                try:
-                    output = (
-                        subprocess.check_output(cmd, shell=True)
-                        .decode("utf-8")
-                        .split("\n")
+            def get_vmrt_child_pid(parent_pid):
+                # Get all child PIDs of the parent process
+                result = subprocess.run(
+                    ["pgrep", "-P", str(parent_pid)], stdout=subprocess.PIPE, text=True
+                )
+                child_pids = result.stdout.splitlines()
+
+                # Check each child PID to see if it's running vmrt
+                for pid in child_pids:
+                    result = subprocess.run(
+                        ["ps", "-p", str(pid), "-o", "comm="],
+                        stdout=subprocess.PIPE,
+                        text=True,
                     )
+                    if "vmrt" in result.stdout:
+                        return int(pid)  # Found the vmrt process
 
-                    # Process the output
-                    values = output[1].split()
+                return None  # No vmrt process found
 
-                    cpu_usage = values[0]
-                    mem_usage = values[1]
-
-                    return cpu_usage, mem_usage
-                except subprocess.CalledProcessError:
+            def get_cpu_memory(pid):
+                result = subprocess.run(
+                    ["ps", "-p", str(pid), "-o", "pcpu,pmem"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                lines = result.stdout.splitlines()
+                if len(lines) >= 2:
+                    cpu, mem = lines[1].strip().split()
+                    return float(cpu), float(mem)
+                else:
                     return None, None
 
             cpu, mem = get_cpu_memory(pid)
