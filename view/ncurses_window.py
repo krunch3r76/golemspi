@@ -38,6 +38,7 @@ class NscrollingWindow(_NcursesWindow):
         self.autoscroll = True
         self._needs_redraw = False
         self._row_of_last_line_displayed = -1
+        self._index_to_first_line_displayed = None
 
     # def _count_wrapped_lines(self, line):
     #     return len(textwrap.wrap(line, self._win_width))
@@ -137,27 +138,30 @@ class NscrollingWindow(_NcursesWindow):
         self._window.refresh()
 
     def scroll_up(self, n=1):
-        _, (
-            index_corresponding_to_first_line,
-            _,
-        ) = self._find_rows_printable_up_to_last()
-        if index_corresponding_to_first_line == 0:
-            return
-        if self._last_line_index - n >= 0 and self._blank_rowcount() == 0:
-            self.autoscroll = False
-            self._last_line_index -= n
+        for _ in range(n):
+            _, (
+                index_corresponding_to_first_line,
+                _,
+            ) = self._find_rows_printable_up_to_last()
+
+            if index_corresponding_to_first_line == 0:
+                break
+            if self._last_line_index - 1 >= 0 and self._blank_rowcount() == 0:
+                self.autoscroll = False
+                self._last_line_index -= 1
             self.refresh_view(clear=True)
-        else:
-            file_logger.debug(
-                f"scroll up failed, last_line_index: {self._last_line_index} and blank rowcount: {self._blank_rowcount()}"
-            )
 
     def scroll_down(self, n=1):
-        if self._last_line_index + n < len(self._lines) and self._blank_rowcount() == 0:
-            self._last_line_index += n
-            self.refresh_view(clear=True)
-            if self._last_line_index == len(self._lines) - 1:
-                self.autoscroll = True
+        for _ in range(n):
+            if (
+                self._last_line_index + 1 < len(self._lines)
+                and self._blank_rowcount() == 0
+            ):
+                self._last_line_index += 1
+                if self._last_line_index == len(self._lines) - 1:
+                    self.autoscroll = True
+                    break
+        self.refresh_view(clear=True)
 
     def resize(self):
         maxy, maxx = curses.LINES - 1, curses.COLS - 1
