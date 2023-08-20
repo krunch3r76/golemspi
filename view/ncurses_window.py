@@ -34,9 +34,7 @@ class NscrollingWindow(_NcursesWindow):
 
         self._lines = PredicatedList()
         self._last_line_index = -1  # Track the index of the last displayed line
-        self._num_lines_on_screen = 0
         self.autoscroll = True
-        self._needs_redraw = False
         self._row_of_last_line_displayed = -1
         self._index_to_first_line_displayed = None
 
@@ -45,16 +43,29 @@ class NscrollingWindow(_NcursesWindow):
 
     def add_line(self, line):
         self._lines.append(line)
-        # if self.autoscroll:
-        #     self._last_line_index += 1
-        #     self._needs_redraw = True
 
     def _blank_rowcount(self):
         return self._win_height - 1 - self._row_of_last_line_displayed
 
-    def _find_rows_printable_up_to_last(self, negative_offset=0):
+    def _find_rows_printable_up_to_last(self):
+        """Return lines and inclusive range from the buffer that, when wrapped, would fill the
+        available space.
+
+        This method identifies lines from the buffer that can be wrapped to fit within the available
+        space in the window.
+
+        Returns:
+            list: A list of lines that can be displayed within the available space.
+            tuple: A tuple representing the inclusive range of lines to be displayed, including the indices
+                   of the first and last lines that fit within the space.
+
+        Note:
+            The method iterates from the last line upwards until it fills the available space or exhausts
+            the lines in the buffer.
+
+        """
         rows_available_to_write_to = self._win_height
-        line_cursor_bottom = self._last_line_index - negative_offset
+        line_cursor_bottom = self._last_line_index
         line_cursor = line_cursor_bottom
         buffer = []
         while line_cursor >= 0:  # do not try to read lines beyond the first in buffer
@@ -75,69 +86,81 @@ class NscrollingWindow(_NcursesWindow):
             line_cursor_bottom,
         )
 
-    def refresh_view(self, clear=False):
+    def refresh_view(self):
+        """
+        Refreshes the view of the ncurses window.
+
+        If autoscrolling is enabled (self.autoscroll is True), the method automatically scrolls the content to display new lines, handling line wrapping as needed.
+
+        If autoscrolling is not enabled, the window is cleared, and the content is displayed without scrolling, showing the lines that can be printed up to the last line.
+
+        This method should be called whenever the view needs to be updated, such as after adding new lines or when scrolling up or down.
+
+        Notes:
+            - Writes lines while there are available rows and unwritten lines.
+            - Scrolls if not enough rows are available.
+            - Clears the window and writes lines without scrolling if autoscrolling is not enabled.
+        """
+
+        # Return early if there are no lines to display
         if len(self._lines) == 0:
             return
 
-        # def rows_occupied_by_up_to_last_line():
+        def rows_available_to_write():
+            return self._win_height - 1 - self._row_of_last_line_displayed
+
+        def write_lines(next_line_index):
+            next_line = self._lines[next_line_index]
+            next_line_wrapped = (
+                textwrap.wrap(next_line, self._win_width) if next_line != "" else [""]
+            )
+            rows_needed_for_writing = len(next_line_wrapped)
+            row_cursor = self._row_of_last_line_displayed + 1
+
+            if rows_available_to_write() < rows_needed_for_writing:
+                lines_to_scroll = rows_needed_for_writing - rows_available_to_write()
+                self._window.scroll(lines_to_scroll)
+                row_cursor -= lines_to_scroll
+
+            for line in next_line_wrapped:
+                self._window.move(row_cursor, 0)
+                self._window.insstr(row_cursor, 0, line)
+                row_cursor += 1
+
+            self._row_of_last_line_displayed = row_cursor - 1
+            self._last_line_index = next_line_index
 
         if self.autoscroll:
+            while self._last_line_index + 1 < len(self._lines):
+                write_lines(self._last_line_index + 1)
 
-            def rows_available_to_write():
-                return self._win_height - 1 - self._row_of_last_line_displayed
-
-            def count_lines_unwritten():
-                return len(self._lines) - 1 - self._last_line_index
-
-            while rows_available_to_write() > 0 and count_lines_unwritten() > 0:
-                next_line_index = self._last_line_index + 1
-                next_line = self._lines[next_line_index]
-                if next_line != "":
-                    next_line_wrapped = textwrap.wrap(next_line, self._win_width)
-                else:
-                    next_line_wrapped = [""]
-                rows_needed_for_writing = len(next_line_wrapped)
-                row_cursor = self._row_of_last_line_displayed + 1
-
-                if rows_available_to_write() < rows_needed_for_writing:
-                    # scroll lines
-                    lines_to_scroll = rows_needed_for_writing - rows_available_to_write
-                    self._window.scroll(lines_to_scroll)
-                    row_cursor -= lines_to_scroll
-
-                # write lines to available space
-                for line in next_line_wrapped:
-                    self._window.move(row_cursor, 0)
-                    # self._window.clrtoeol()
-                    self._window.insstr(row_cursor, 0, line)
-                    row_cursor += 1
-                self._row_of_last_line_displayed = row_cursor - 1
-                self._last_line_index = next_line_index
-
-            while count_lines_unwritten() > 0:
-                next_line_index = self._last_line_index + 1
-                next_line = self._lines[next_line_index]
-                next_line_wrapped = textwrap.wrap(next_line, self._win_width)
-                rows_needed_for_writing = len(next_line_wrapped)
-                self._window.scroll(rows_needed_for_writing)
-                row_cursor = self._win_height - rows_needed_for_writing
-                for line in next_line_wrapped:
-                    self._window.move(row_cursor, 0)
-                    # self._window.clrtoeol()
-                    self._window.insstr(row_cursor, 0, line)
-                    row_cursor += 1
-                    self._last_line_index = next_line_index
-
-        elif clear:
+        else:
             self._window.clear()
-
             rows_printable_up_to_last, _ = self._find_rows_printable_up_to_last()
             for i, row in enumerate(rows_printable_up_to_last):
                 self._window.insstr(i, 0, row)
 
+        # Refreshing the window to display changes
         self._window.refresh()
 
     def scroll_up(self, n=1):
+        """Scrolls the window up by n number of lines.
+
+        This method scrolls the console window up by n lines, or up to n lines if there are fewer lines
+        available above the current top line. If the window is already scrolled to the top, no action is
+        taken.
+
+        Args:
+            n (int, optional): The number of lines to scroll up. Defaults to 1.
+
+        Note:
+            If autoscrolling is active and the window scrolls up, autoscrolling will be turned off.
+
+        Post-State:
+            The console window is redrawn to display the content after scrolling, with the new top line
+            reflecting the scrolling action.
+        """
+
         for _ in range(n):
             _, (
                 index_corresponding_to_first_line,
@@ -149,9 +172,27 @@ class NscrollingWindow(_NcursesWindow):
             if self._last_line_index - 1 >= 0 and self._blank_rowcount() == 0:
                 self.autoscroll = False
                 self._last_line_index -= 1
-            self.refresh_view(clear=True)
+        curses.napms(10)
+        self.refresh_view()
 
     def scroll_down(self, n=1):
+        """Scrolls the window down by n number of lines.
+
+        This method scrolls the console window down by n lines, or up to n lines if there are fewer lines
+        available below the current bottom line. If the window is already scrolled to the bottom, no action
+        is taken.
+
+        Args:
+            n (int, optional): The number of lines to scroll down. Defaults to 1.
+
+        Note:
+            If autoscrolling is inactive and the window scrolls to the last line, autoscrolling will be
+            turned on.
+
+        Post-State:
+            The console window is redrawn to display the content after scrolling, with the new bottom line
+            reflecting the scrolling action.
+        """
         for _ in range(n):
             if (
                 self._last_line_index + 1 < len(self._lines)
@@ -159,9 +200,11 @@ class NscrollingWindow(_NcursesWindow):
             ):
                 self._last_line_index += 1
                 if self._last_line_index == len(self._lines) - 1:
-                    self.autoscroll = True
                     break
-        self.refresh_view(clear=True)
+        self.refresh_view()
+        if self._last_line_index == len(self._lines) - 1:
+            self.autoscroll = True
+        curses.napms(10)
 
     def resize(self):
         maxy, maxx = curses.LINES - 1, curses.COLS - 1
