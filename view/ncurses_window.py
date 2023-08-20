@@ -1,7 +1,8 @@
 # File: golemspi/view/ncurses_window.py
 import curses
 import textwrap
-from .utils.predicatedlist import PredicatedList
+from view.utils.predicatedlist import PredicatedList
+from view.ncurses_management import ColorPair
 
 from utils.mylogger import console_logger, file_logger
 
@@ -101,19 +102,22 @@ class NscrollingWindow(_NcursesWindow):
             - When autoscrolling, determines new lines by comparing self._index_to_last_line_displayed with
               last offset of self._lines
         """
+        from enum import IntEnum
 
-        # Return early if there are no lines to display
-        if len(self._lines) == 0:
-            return
+        class TokenPosition(IntEnum):
+            TIMESTAMP = 0
+            LEVEL = 1
+            NAMESPACE = 2
 
         def rows_available_to_write():
             return self._win_height - 1 - self._row_of_last_line_displayed
 
         # write wrapped lines scrolling to make space available as needed
-        def write_wrapped_line(next_line_index):
+        def write_next_line_as_wrapped():
             # post:
             #  self._row_of_last_line_displayed advanced number of lines wrapped
             #  self._index_to_last_line_displayed advanced 1
+            next_line_index = self._index_to_last_line_displayed + 1
             next_line = self._lines[next_line_index]
             next_line_wrapped = (
                 textwrap.wrap(next_line, self._win_width) if next_line != "" else [""]
@@ -133,7 +137,68 @@ class NscrollingWindow(_NcursesWindow):
             # post: self._row_of_last_line_displayed incremented n lines
             for line in next_line_wrapped:
                 self._window.move(row_cursor, 0)
-                self._window.insstr(row_cursor, 0, line)
+                if next_line.startswith("[") and "]" in next_line:
+                    # Split the line into the bracketed part and the rest
+                    bracketed_part, rest_of_line = next_line.split("]", 1)
+                    tokens = bracketed_part[1:].split()  # Exclude the opening '['
+
+                    # Write the opening '['
+                    self._window.insstr(row_cursor, 0, "[")  # Normal color
+
+                    # Write the first token in light gray
+                    self._window.insstr(
+                        row_cursor,
+                        1,
+                        tokens[TokenPosition.TIMESTAMP] + " ",
+                        curses.color_pair(ColorPair.LIGHT_GRAY),
+                    )
+
+                    offset = len(tokens[TokenPosition.TIMESTAMP]) + 2
+                    # Write the second token in appropriate color
+                    if tokens[TokenPosition.LEVEL] == "INFO":
+                        self._window.insstr(
+                            row_cursor,
+                            offset,
+                            tokens[TokenPosition.LEVEL] + " ",
+                            curses.color_pair(ColorPair.INFO),
+                        )
+                    elif tokens[TokenPosition.LEVEL] == "WARN":
+                        self._window.insstr(
+                            row_cursor,
+                            offset,
+                            tokens[TokenPosition.LEVEL] + " ",
+                            curses.color_pair(ColorPair.WARN) | curses.A_BOLD,
+                        )
+                    elif tokens[TokenPosition.LEVEL] == "ERROR":
+                        self._window.insstr(
+                            row_cursor,
+                            offset,
+                            tokens[TokenPosition.LEVEL] + " ",
+                            curses.color_pair(ColorPair.ERROR),
+                        )
+
+                    offset += len(tokens[TokenPosition.LEVEL]) + 1
+
+                    # Write the third token in light gray
+                    self._window.insstr(
+                        row_cursor,
+                        offset,
+                        tokens[TokenPosition.NAMESPACE],
+                        curses.color_pair(ColorPair.LIGHT_GRAY),
+                    )
+
+                    offset += len(tokens[TokenPosition.NAMESPACE])
+                    # Write the closing bracket in normal color
+                    self._window.insstr(row_cursor, offset, "]", curses.color_pair(0))
+
+                    offset += 1
+                    # Write the rest of the line in normal color
+                    self._window.insstr(
+                        row_cursor, offset, rest_of_line, curses.color_pair(0)
+                    )
+                else:
+                    self._window.insstr(row_cursor, 0, line)
+
                 self._row_of_last_line_displayed = row_cursor
                 row_cursor += 1
 
@@ -141,9 +206,8 @@ class NscrollingWindow(_NcursesWindow):
             self._index_to_last_line_displayed += 1
 
         if self.autoscroll:
-            while self._index_to_last_line_displayed + 1 < len(self._lines):
-                write_wrapped_line(self._index_to_last_line_displayed + 1)
-
+            while self._index_to_last_line_displayed < len(self._lines) - 1:
+                write_next_line_as_wrapped()
         else:
             self._window.clear()
             rows_printable_up_to_last, _ = self._find_rows_printable_up_to_last()
