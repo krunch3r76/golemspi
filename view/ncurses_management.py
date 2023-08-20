@@ -4,7 +4,8 @@ import curses
 
 
 class Color(IntEnum):
-    LIGHT_GRAY = 200
+    DARK_GRAY = 200
+    LIGHT_GRAY = auto()
     CUSTOM_YELLOW = auto()
     ORANGE = auto()
 
@@ -25,7 +26,8 @@ def init_color_from_hex(color_number, hex_code):
 
 
 class ColorPair(IntEnum):
-    LIGHT_GRAY = 1
+    DARK_GRAY = 1
+    LIGHT_GRAY = auto()
     INFO = auto()
     WARN = auto()
     ERROR = auto()
@@ -47,12 +49,14 @@ def initialize_ncurses(scr):
     # curses.init_color(Color.CUSTOM_YELLOW, 1000, 1000, 0)
     # curses.init_color(Color.ORANGE, 1000, 647, 0)
     init_color_from_hex(Color.LIGHT_GRAY, "d3d3d3")
-    init_color_from_hex(Color.CUSTOM_YELLOW, "ffff00")
+    init_color_from_hex(Color.DARK_GRAY, "a9a9a9")
+    init_color_from_hex(Color.CUSTOM_YELLOW, "F0E68C")
     init_color_from_hex(Color.ORANGE, "ffa500")
 
+    curses.init_pair(ColorPair.DARK_GRAY, Color.DARK_GRAY, -1)
     curses.init_pair(ColorPair.LIGHT_GRAY, Color.LIGHT_GRAY, -1)
     curses.init_pair(ColorPair.INFO, curses.COLOR_GREEN, -1)
-    curses.init_pair(ColorPair.WARN, curses.COLOR_YELLOW, -1)
+    curses.init_pair(ColorPair.WARN, Color.CUSTOM_YELLOW, -1)
     curses.init_pair(ColorPair.ERROR, curses.COLOR_RED, -1)
     # curses.init_pair(
     #     1, curses.COLOR_YELLOW, curses.COLOR_BLACK

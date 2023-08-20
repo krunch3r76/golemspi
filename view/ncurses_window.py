@@ -150,7 +150,7 @@ class NscrollingWindow(_NcursesWindow):
                         row_cursor,
                         1,
                         tokens[TokenPosition.TIMESTAMP] + " ",
-                        curses.color_pair(ColorPair.LIGHT_GRAY),
+                        curses.color_pair(ColorPair.DARK_GRAY),
                     )
 
                     offset = len(tokens[TokenPosition.TIMESTAMP]) + 2
@@ -167,7 +167,7 @@ class NscrollingWindow(_NcursesWindow):
                             row_cursor,
                             offset,
                             tokens[TokenPosition.LEVEL] + " ",
-                            curses.color_pair(ColorPair.WARN) | curses.A_BOLD,
+                            curses.color_pair(ColorPair.WARN),
                         )
                     elif tokens[TokenPosition.LEVEL] == "ERROR":
                         self._window.insstr(
@@ -184,18 +184,16 @@ class NscrollingWindow(_NcursesWindow):
                         row_cursor,
                         offset,
                         tokens[TokenPosition.NAMESPACE],
-                        curses.color_pair(ColorPair.LIGHT_GRAY),
+                        curses.color_pair(ColorPair.DARK_GRAY),
                     )
 
                     offset += len(tokens[TokenPosition.NAMESPACE])
                     # Write the closing bracket in normal color
-                    self._window.insstr(row_cursor, offset, "]", curses.color_pair(0))
+                    self._window.insstr(row_cursor, offset, "]")
 
                     offset += 1
                     # Write the rest of the line in normal color
-                    self._window.insstr(
-                        row_cursor, offset, rest_of_line, curses.color_pair(0)
-                    )
+                    self._window.insstr(row_cursor, offset, rest_of_line)
                 else:
                     self._window.insstr(row_cursor, 0, line)
 
