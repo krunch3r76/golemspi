@@ -7,38 +7,40 @@ from utils.mylogger import console_logger, file_logger
 
 
 class _NcursesWindow:
-    def __init__(
-        self, nlines, ncols, margin_top, margin_left, margin_bottom, margin_right
-    ):
+    def __init__(self, margin_top, margin_left, margin_bottom, margin_right):
         self._margin_top = margin_top
         self._margin_left = margin_left
         self._margin_bottom = margin_bottom
         self._margin_right = margin_right
-        self._win_width = ncols
-        self._win_height = nlines
 
-        self._window = curses.newwin(nlines, ncols, margin_top, margin_left)
+        # Get the total number of lines and columns
+        total_lines, total_cols = curses.LINES, curses.COLS
 
+        # Compute the window size based on the margins
+        self._win_height = total_lines - margin_top - margin_bottom
+        self._win_width = total_cols - margin_left - margin_right
 
-class NcursesWindow(_NcursesWindow):
-    def __init__(
-        self, nlines, ncols, margin_top, margin_left, margin_bottom, margin_right
-    ):
-        super().__init__(
-            nlines, ncols, margin_top, margin_left, margin_bottom, margin_right
+        # Create the window with the computed size
+        self._window = curses.newwin(
+            self._win_height, self._win_width, margin_top, margin_left
         )
-        self._window = curses.newwin(nlines, ncols, margin_top, margin_left)
+
+
+class NscrollingWindow(_NcursesWindow):
+    def __init__(self, margin_top, margin_left, margin_bottom, margin_right):
+        super().__init__(margin_top, margin_left, margin_bottom, margin_right)
+
         self._window.scrollok(True)
 
-        self._lines = PredicatedList()  # Your custom list type
+        self._lines = PredicatedList()
         self._last_line_index = -1  # Track the index of the last displayed line
         self._num_lines_on_screen = 0
         self.autoscroll = True
         self._needs_redraw = False
         self._row_of_last_line_displayed = -1
 
-    def count_wrapped_lines(self, line):
-        return len(textwrap.wrap(line, self._win_width))
+    # def _count_wrapped_lines(self, line):
+    #     return len(textwrap.wrap(line, self._win_width))
 
     def add_line(self, line):
         self._lines.append(line)
@@ -48,6 +50,29 @@ class NcursesWindow(_NcursesWindow):
 
     def _blank_rowcount(self):
         return self._win_height - 1 - self._row_of_last_line_displayed
+
+    def _find_rows_printable_up_to_last(self, negative_offset=0):
+        rows_available_to_write_to = self._win_height
+        line_cursor_bottom = self._last_line_index - negative_offset
+        line_cursor = line_cursor_bottom
+        buffer = []
+        while line_cursor >= 0:  # do not try to read lines beyond the first in buffer
+            next_wrapped_line = textwrap.wrap(self._lines[line_cursor], self._win_width)
+            count_lines_needed = len(next_wrapped_line)
+            if count_lines_needed <= rows_available_to_write_to:
+                buffer.append(next_wrapped_line)
+                rows_available_to_write_to -= count_lines_needed
+            else:
+                break
+            line_cursor -= 1
+        buffer.reverse()
+        self._row_of_last_line_displayed = self._win_height - 1
+        # flatten buffer
+        wrapped_visible_lines = [line for sublist in buffer for line in sublist]
+        return wrapped_visible_lines, (
+            line_cursor + 1,
+            line_cursor_bottom,
+        )
 
     def refresh_view(self, clear=False):
         if len(self._lines) == 0:
@@ -105,57 +130,19 @@ class NcursesWindow(_NcursesWindow):
         elif clear:
             self._window.clear()
 
-            def find_rows_printable_up_to_last():
-                rows_available_to_write_to = self._win_height
-                # rows_occupied_by_wrapped_lines = 0
-                cursor = self._last_line_index
-                buffer = []
-                while (
-                    cursor >= 0
-                ):  # do not try to read lines beyond the first in buffer
-                    next_wrapped_line = textwrap.wrap(
-                        self._lines[cursor], self._win_width
-                    )
-                    cursor -= 1
-                    count_lines_needed = len(next_wrapped_line)
-                    if count_lines_needed <= rows_available_to_write_to:
-                        buffer.append(next_wrapped_line)
-                        rows_available_to_write_to -= count_lines_needed
-                    else:
-                        break
-                # flatten buffer
-                buffer.reverse()
-                self._row_of_last_line_displayed = self._win_height - 1
-                wrapped_visible_lines = [line for sublist in buffer for line in sublist]
-                return wrapped_visible_lines
-
-            rows_printable_up_to_last = find_rows_printable_up_to_last()
+            rows_printable_up_to_last, _ = self._find_rows_printable_up_to_last()
             for i, row in enumerate(rows_printable_up_to_last):
                 self._window.insstr(i, 0, row)
-
-            # how many rows fit from the _last_line_index
-
-            # rows_available_to_write_to = self._win_height - 1
-            # rows_occupied_by_wrapped_lines = 0
-            # cursor = self._last_line_index
-            # buffer = []
-            # while cursor >= 0:  # do not try to read lines beyond the first in buffer
-            #     next_wrapped_line = textwrap.wrap(self._lines[cursor], self._win_width)
-            #     cursor=-1
-            #     count_lines_needed = len(next_wrapped_line)
-            #     if count_lines_needed <= rows_available_to_write_to:
-            #         buffer.append(next_wrapped_line)
-            #         rows_available_to_write_to -= count_lines_needed
-            #     else:
-            #         break
-            # # flatten buffer
-            # wrapped_visible_lines = [
-            #     line for sublist in buffer for line in sublist
-            # ]  # Flatten the list
 
         self._window.refresh()
 
     def scroll_up(self, n=1):
+        _, (
+            index_corresponding_to_first_line,
+            _,
+        ) = self._find_rows_printable_up_to_last()
+        if index_corresponding_to_first_line == 0:
+            return
         if self._last_line_index - n >= 0 and self._blank_rowcount() == 0:
             self.autoscroll = False
             self._last_line_index -= n
