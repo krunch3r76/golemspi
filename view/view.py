@@ -38,6 +38,10 @@ class View:
             self.console_screen.scroll_up(10)
         elif ch == curses.KEY_NPAGE:
             self.console_screen.scroll_down(10)
+        elif ch == curses.KEY_END:
+            self.console_screen.scroll_to_bottom()
+        elif ch == curses.KEY_HOME:
+            self.console_screen.scroll_to_top()
 
         self.console_screen.refresh_view()
 

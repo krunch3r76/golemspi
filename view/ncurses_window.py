@@ -4,7 +4,7 @@ import textwrap
 from view.utils.predicatedlist import PredicatedList
 from view.ncurses_management import ColorPair
 
-from utils.mylogger import console_logger, file_logger
+from utils.mylogger import file_logger
 
 
 class _NcursesWindow:
@@ -37,6 +37,7 @@ class NscrollingWindow(_NcursesWindow):
         self._index_to_last_line_displayed = (
             -1
         )  # Track the index of the last displayed line
+        self._index_to_first_line_displayed = -1
         self.autoscroll = True
         self._row_of_last_line_displayed = -1
 
@@ -44,17 +45,47 @@ class NscrollingWindow(_NcursesWindow):
     #     return len(textwrap.wrap(line, self._win_width))
 
     def add_line(self, line):
+        """Add a line to the internal buffer
+
+
+        Notes:
+            refresh_view must be called externally to reflect any changes
+        """
         self._lines.append(line)
+
+    def scroll_to_bottom(self):
+        self.autoscroll = True
+        _, (
+            index_corresponding_to_first_line,
+            index_corresponding_to_last_line,
+        ) = self._find_rows_printable_up_to_last(len(self._lines) - 1)
+
+        self.refresh_view(
+            index_to_first=index_corresponding_to_first_line,
+            index_to_last=index_corresponding_to_last_line,
+        )
+
+    def scroll_to_top(self):
+        self.autoscroll = False
+        _, (
+            index_corresponding_to_first_line,
+            index_corresponding_to_last_line,
+        ) = self._find_rows_printable_from_top()
+
+        self.refresh_view(
+            index_to_first=index_corresponding_to_first_line,
+            index_to_last=index_corresponding_to_last_line,
+        )
 
     def _blank_rowcount(self):
         return self._win_height - 1 - self._row_of_last_line_displayed
 
-    def _find_rows_printable_up_to_last(self):
-        """Return lines and inclusive range from the buffer that, when wrapped, would fill the
+    def _find_rows_printable_up_to_last(self, last_index):
+        """Return lines up to the last specified and inclusive range from the buffer that, when wrapped, would fill the
         available space.
 
-        This method identifies lines from the buffer that can be wrapped to fit within the available
-        space in the window.
+        This method identifies lines from the buffer up to _index_to_last_line_displayed
+        that can be wrapped to fit within the available space in the window.
 
         Returns:
             list: A list of lines that can be displayed within the available space.
@@ -67,11 +98,24 @@ class NscrollingWindow(_NcursesWindow):
 
         """
         rows_available_to_write_to = self._win_height
-        line_cursor_bottom = self._index_to_last_line_displayed
+        line_cursor_bottom = last_index
         line_cursor = line_cursor_bottom
         buffer = []
         while line_cursor >= 0:  # do not try to read lines beyond the first in buffer
-            next_wrapped_line = textwrap.wrap(self._lines[line_cursor], self._win_width)
+            next_line = self._lines[line_cursor]
+            # Determine the length of the bracketed expression
+            bracketed_expression_length = 0
+            if next_line.startswith("[") and "]" in next_line:
+                bracketed_expression_length = next_line.index("]") + 1
+
+            # wrap to at least include the bracketed expression
+            adjusted_win_length = self._win_width
+            if bracketed_expression_length > adjusted_win_length:
+                adjusted_win_length = bracketed_expression_length
+            if adjusted_win_length < bracketed_expression_length:
+                adjusted_win_length = bracketed_expression_length
+
+            next_wrapped_line = textwrap.wrap(next_line, adjusted_win_length)
             count_lines_needed = len(next_wrapped_line)
             if count_lines_needed <= rows_available_to_write_to:
                 buffer.append(next_wrapped_line)
@@ -80,7 +124,7 @@ class NscrollingWindow(_NcursesWindow):
                 break
             line_cursor -= 1
         buffer.reverse()
-        self._row_of_last_line_displayed = self._win_height - 1
+        # self._row_of_last_line_displayed = self._win_height - 1
         # flatten buffer
         wrapped_visible_lines = [line for sublist in buffer for line in sublist]
         return wrapped_visible_lines, (
@@ -88,7 +132,39 @@ class NscrollingWindow(_NcursesWindow):
             line_cursor_bottom,
         )
 
-    def refresh_view(self):
+    def _find_rows_printable_from_top(self):
+        """Return lines from the top and inclusive range from the buffer that, when wrapped, would fill the available space."""
+        rows_available_to_write_to = self._win_height
+        line_cursor_top = 0
+        line_cursor = line_cursor_top
+
+        buffer = []
+        while line_cursor <= self._win_height - 1:
+            next_line = self._lines[line_cursor]
+            # Determine the length of the bracketed expression
+            bracketed_expression_length = 0
+            if next_line.startswith("[") and "]" in next_line:
+                bracketed_expression_length = next_line.index("]") + 1
+
+            # wrap to at least include the bracketed expression
+            adjusted_win_length = self._win_width
+            if bracketed_expression_length > adjusted_win_length:
+                adjusted_win_length = bracketed_expression_length
+            if adjusted_win_length < bracketed_expression_length:
+                adjusted_win_length = bracketed_expression_length
+
+            next_wrapped_line = textwrap.wrap(next_line, adjusted_win_length)
+            count_lines_needed = len(next_wrapped_line)
+            if count_lines_needed <= rows_available_to_write_to:
+                buffer.append(next_wrapped_line)
+                rows_available_to_write_to -= count_lines_needed
+            else:
+                break
+            line_cursor += 1
+        wrapped_visible_lines = [line for sublist in buffer for line in sublist]
+        return wrapped_visible_lines, (line_cursor_top, line_cursor - 1)
+
+    def refresh_view(self, index_to_first=None, index_to_last=None):
         """
         Refreshes the view of the ncurses window.
 
@@ -112,90 +188,132 @@ class NscrollingWindow(_NcursesWindow):
         def rows_available_to_write():
             return self._win_height - 1 - self._row_of_last_line_displayed
 
+        def insstr_truncated(row, col, text, attr=None):
+            window = self._window
+            # Determine the available space for writing
+            available_space = window.getmaxyx()[1] - col
+
+            # Truncate the text if necessary
+            truncated_text = text[:available_space]
+
+            # Write the text, applying the attribute if provided
+            if attr is not None:
+                window.insstr(row, col, truncated_text, attr)
+            else:
+                window.insstr(row, col, truncated_text)
+
+            # Return the length of the text that was actually written
+            return len(truncated_text)
+
         # write wrapped lines scrolling to make space available as needed
-        def write_next_line_as_wrapped():
+        def write_next_line_as_wrapped(next_line):
             # post:
             #  self._row_of_last_line_displayed advanced number of lines wrapped
             #  self._index_to_last_line_displayed advanced 1
-            next_line_index = self._index_to_last_line_displayed + 1
-            next_line = self._lines[next_line_index]
+
+            # next_line_index = self._index_to_last_line_displayed + 1
+            # next_line = self._lines[next_line_index]
+
+            # Determine the length of the bracketed expression
+            bracketed_expression_length = 0
+            if next_line.startswith("[") and "]" in next_line:
+                bracketed_expression_length = next_line.index("]") + 1
+
+            # wrap to at least include the bracketed expression
+            adjusted_win_length = self._win_width
+            if bracketed_expression_length > adjusted_win_length:
+                adjusted_win_length = bracketed_expression_length
+            if adjusted_win_length < bracketed_expression_length:
+                adjusted_win_length = bracketed_expression_length
             next_line_wrapped = (
-                textwrap.wrap(next_line, self._win_width) if next_line != "" else [""]
+                textwrap.wrap(next_line, adjusted_win_length)
+                if next_line != ""
+                else [""]
             )
             rows_needed_for_writing = len(next_line_wrapped)
+
             # advance the row cursor to one line beneath last displayed
-            row_cursor = self._row_of_last_line_displayed + 1
+            if rows_available_to_write() > 0:
+                row_cursor = self._row_of_last_line_displayed + 1
+            else:
+                row_cursor = self._row_of_last_line_displayed
 
             # if one row is not enough (no room, more than one line) scroll & adjust row_cursor
             if rows_available_to_write() < rows_needed_for_writing:
                 # scroll as many lines as would be needed to write the next wrapped line
                 lines_to_scroll = rows_needed_for_writing - rows_available_to_write()
                 self._window.scroll(lines_to_scroll)
-                row_cursor -= lines_to_scroll
+                row_cursor -= lines_to_scroll - 1
 
             # write the n lines of the wrapped line list over the (now) available blank rows at bottom
             # post: self._row_of_last_line_displayed incremented n lines
-            for line in next_line_wrapped:
+            for i, line in enumerate(next_line_wrapped):
                 self._window.move(row_cursor, 0)
-                if next_line.startswith("[") and "]" in next_line:
+                if (
+                    i == 0
+                    and line.startswith("[")
+                    and "[" in line
+                    and line.startswith("[")
+                ):
                     # Split the line into the bracketed part and the rest
-                    bracketed_part, rest_of_line = next_line.split("]", 1)
+                    bracketed_part, rest_of_line = line.split("]", 1)
                     tokens = bracketed_part[1:].split()  # Exclude the opening '['
-
+                    offset = 0
                     # Write the opening '['
-                    self._window.insstr(row_cursor, 0, "[")  # Normal color
+                    offset += insstr_truncated(row_cursor, offset, "[")  # Normal color
 
                     # Write the first token in light gray
-                    self._window.insstr(
+                    offset += insstr_truncated(
                         row_cursor,
-                        1,
+                        offset,
                         tokens[TokenPosition.TIMESTAMP] + " ",
                         curses.color_pair(ColorPair.DARK_GRAY),
                     )
 
-                    offset = len(tokens[TokenPosition.TIMESTAMP]) + 2
+                    # offset = len(tokens[TokenPosition.TIMESTAMP]) + 2
                     # Write the second token in appropriate color
                     if tokens[TokenPosition.LEVEL] == "INFO":
-                        self._window.insstr(
+                        offset += insstr_truncated(
                             row_cursor,
                             offset,
                             tokens[TokenPosition.LEVEL] + " ",
                             curses.color_pair(ColorPair.INFO),
                         )
                     elif tokens[TokenPosition.LEVEL] == "WARN":
-                        self._window.insstr(
+                        offset += insstr_truncated(
                             row_cursor,
                             offset,
                             tokens[TokenPosition.LEVEL] + " ",
                             curses.color_pair(ColorPair.WARN),
                         )
                     elif tokens[TokenPosition.LEVEL] == "ERROR":
-                        self._window.insstr(
+                        offset += insstr_truncated(
                             row_cursor,
                             offset,
                             tokens[TokenPosition.LEVEL] + " ",
                             curses.color_pair(ColorPair.ERROR),
                         )
 
-                    offset += len(tokens[TokenPosition.LEVEL]) + 1
+                    # offset += 1
+                    # offset += len(tokens[TokenPosition.LEVEL]) + 1
 
                     # Write the third token in light gray
-                    self._window.insstr(
+                    offset += insstr_truncated(
                         row_cursor,
                         offset,
                         tokens[TokenPosition.NAMESPACE],
                         curses.color_pair(ColorPair.DARK_GRAY),
                     )
 
-                    offset += len(tokens[TokenPosition.NAMESPACE])
+                    # offset += len(tokens[TokenPosition.NAMESPACE])
                     # Write the closing bracket in normal color
-                    self._window.insstr(row_cursor, offset, "]")
+                    offset += insstr_truncated(row_cursor, offset, "]")
 
-                    offset += 1
+                    # offset += 1
                     # Write the rest of the line in normal color
-                    self._window.insstr(row_cursor, offset, rest_of_line)
+                    insstr_truncated(row_cursor, offset, rest_of_line)
                 else:
-                    self._window.insstr(row_cursor, 0, line)
+                    insstr_truncated(row_cursor, 0, line)
 
                 self._row_of_last_line_displayed = row_cursor
                 row_cursor += 1
@@ -204,13 +322,23 @@ class NscrollingWindow(_NcursesWindow):
             self._index_to_last_line_displayed += 1
 
         if self.autoscroll:
+            self._index_to_first_line_displayed = self._index_to_last_line_displayed
             while self._index_to_last_line_displayed < len(self._lines) - 1:
-                write_next_line_as_wrapped()
-        else:
+                next_line_index = self._index_to_last_line_displayed + 1
+                next_line = self._lines[next_line_index]
+                write_next_line_as_wrapped(next_line)
+                self._index_to_first_line_displayed -= 1
+        elif index_to_first is not None:
+            self._index_to_last_line_displayed = index_to_first - 1
             self._window.clear()
-            rows_printable_up_to_last, _ = self._find_rows_printable_up_to_last()
-            for i, row in enumerate(rows_printable_up_to_last):
-                self._window.insstr(i, 0, row)
+            for index in range(index_to_first, index_to_last + 1):
+                next_line = self._lines[index]
+                write_next_line_as_wrapped(next_line)
+            self._index_to_first_line_displayed = index_to_first
+            # for i, row in enumerate(rows_printable_up_to_last):
+            #     self._window.insstr(i, 0, row)
+        # elif index_to_last is not None:
+        #     self._index_to_last_line_displayed = index_to_last
 
         # Refreshing the window to display changes
         self._window.refresh()
@@ -233,22 +361,37 @@ class NscrollingWindow(_NcursesWindow):
             reflecting the scrolling action.
         """
 
+        CHANGE = False
+        index_corresponding_to_first_line = None
+        index_corresponding_to_last_line = None
+
+        previous_index_to_last_line_displayed = self._index_to_last_line_displayed - 1
+
+        if self._index_to_first_line_displayed == 0:
+            return
+
         for _ in range(n):
             _, (
                 index_corresponding_to_first_line,
-                _,
-            ) = self._find_rows_printable_up_to_last()
+                index_corresponding_to_last_line,
+            ) = self._find_rows_printable_up_to_last(
+                previous_index_to_last_line_displayed
+            )
 
-            if index_corresponding_to_first_line == 0:
-                break
+            previous_index_to_last_line_displayed -= 1
+
             if (
-                self._index_to_last_line_displayed - 1 >= 0
+                previous_index_to_last_line_displayed >= 0
                 and self._blank_rowcount() == 0
             ):
                 self.autoscroll = False
-                self._index_to_last_line_displayed -= 1
+                CHANGE = True
         curses.napms(10)
-        self.refresh_view()
+        if CHANGE:
+            self.refresh_view(
+                index_to_first=index_corresponding_to_first_line,
+                index_to_last=index_corresponding_to_last_line,
+            )
 
     def scroll_down(self, n=1):
         """Scrolls the window down by n number of lines.
@@ -268,15 +411,31 @@ class NscrollingWindow(_NcursesWindow):
             The console window is redrawn to display the content after scrolling, with the new bottom line
             reflecting the scrolling action.
         """
+
+        #        CHANGE = False
+        index_corresponding_to_first_line = None
+        index_corresponding_to_last_line = None
+
+        next_index_to_last_line_displayed = self._index_to_last_line_displayed + 1
+
+        # or test for autoscroll
+        if self._index_to_last_line_displayed == len(self._lines) - 1:
+            return
+
         for _ in range(n):
-            if (
-                self._index_to_last_line_displayed + 1 < len(self._lines)
-                and self._blank_rowcount() == 0
-            ):
-                self._index_to_last_line_displayed += 1
-                if self._index_to_last_line_displayed == len(self._lines) - 1:
-                    break
-        self.refresh_view()
+            _, (
+                index_corresponding_to_first_line,
+                index_corresponding_to_last_line,
+            ) = self._find_rows_printable_up_to_last(next_index_to_last_line_displayed)
+
+            next_index_to_last_line_displayed += 1
+            if next_index_to_last_line_displayed > len(self._lines) - 1:
+                break
+
+        self.refresh_view(
+            index_to_first=index_corresponding_to_first_line,
+            index_to_last=index_corresponding_to_last_line,
+        )
         if self._index_to_last_line_displayed == len(self._lines) - 1:
             self.autoscroll = True
         curses.napms(10)
