@@ -21,8 +21,6 @@ class HardwareResourcesCapEvent(Event):
         match = re.search(pattern, log_line.message)
 
         if not match:
-            print("no match")
-            print(log_line.message)
             return None
 
         cpu_threads = int(match.group("cpu_threads"))

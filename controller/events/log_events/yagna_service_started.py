@@ -24,7 +24,6 @@ class YagnaServiceStartedEvent(Event):
         match = re.search(pattern, log_line.message)
 
         if not match:
-            print(log_line.message)
             return None
 
         version = match.group("version")

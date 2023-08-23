@@ -30,7 +30,11 @@ class View:
         ch = self.scr.getch()
 
         # check if the user pressed up or down
-        if ch == curses.KEY_UP:
+        if ch == curses.KEY_RESIZE:
+            self.console_screen.resize()
+            self.console_screen.redraw()
+            return
+        elif ch == curses.KEY_UP:
             self.console_screen.scroll_up()
         elif ch == curses.KEY_DOWN:
             self.console_screen.scroll_down()
@@ -42,8 +46,9 @@ class View:
             self.console_screen.scroll_to_bottom()
         elif ch == curses.KEY_HOME:
             self.console_screen.scroll_to_top()
-
-        self.console_screen.refresh_view()
+        else:
+            curses.napms(10)
+            self.console_screen.refresh_view()
 
     def update_resources(
         self, threads=None, memory=None, storage=None, subnet=None, init=False
