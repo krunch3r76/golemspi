@@ -1,6 +1,6 @@
 import curses
 from .ncurses_management import initialize_ncurses, terminate_ncurses
-from .ncurses_window import NscrollingWindow
+from .ncurses_window import GolemSPLogScrollingWindow
 
 from utils.mylogger import console_logger, file_logger
 
@@ -10,7 +10,7 @@ class View:
         self.scr = curses.initscr()
         initialize_ncurses(self.scr)
         self.scr.clear()  # Clears the screen
-        self.console_screen = NscrollingWindow(
+        self.console_screen = GolemSPLogScrollingWindow(
             5,  # margin_top
             0,  # margin_left
             0,  # margin_bottom
