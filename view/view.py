@@ -1,8 +1,9 @@
 import curses
 from .ncurses_management import initialize_ncurses, terminate_ncurses
-from .ncurses_window import GolemSPLogScrollingWindow
+from .golemsp_log_scrolling_window import GolemSPLogScrollingWindow
+from view.utils.predicatedlist import PredicatedList
 
-from utils.mylogger import console_logger, file_logger
+from utils.mylogger import file_logger
 
 
 class View:
@@ -15,6 +16,7 @@ class View:
             0,  # margin_left
             0,  # margin_bottom
             0,  # margin_right
+            line_buffer_class=PredicatedList,
         )  # Create a new pad that is the size of the entire terminal screen
         self.console_screen.refresh_view()
 
