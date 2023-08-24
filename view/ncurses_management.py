@@ -26,6 +26,7 @@ def init_color_from_hex(color_number, hex_code):
 
 
 class ColorPair(IntEnum):
+    DEFAULT = 0
     DARK_GRAY = 1
     LIGHT_GRAY = auto()
     INFO = auto()
