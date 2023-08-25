@@ -81,11 +81,14 @@ class NcursesWindowScrolling(_NcursesWindow):
         if self._index_to_first_line_displayed == 0:
             return
 
-        CHANGE = False
+        change = False
         index_corresponding_to_first_line = None
         index_corresponding_to_last_line = None
 
         for _ in range(n):
+            # scroll up n lines
+
+            # calculate indices that fit in the window
             previous_index_to_last_line_displayed = (
                 self._index_to_last_line_displayed - 1
             )
@@ -95,18 +98,17 @@ class NcursesWindowScrolling(_NcursesWindow):
             ) = self._find_rows_printable_up_to_last(
                 previous_index_to_last_line_displayed
             )
+
+            # update state
             self._index_to_last_line_displayed -= 1
-            if (
-                previous_index_to_last_line_displayed >= 0
-                and self._blank_rowcount() == 0
-            ):
+            if self._blank_rowcount() == 0:
                 self.autoscroll = False
-                CHANGE = True
+                change = True
             if index_corresponding_to_first_line == 0:
                 break
 
         curses.napms(5)
-        if CHANGE or index_corresponding_to_first_line == 0:
+        if change or index_corresponding_to_first_line == 0:
             self.refresh_view(
                 index_to_first=index_corresponding_to_first_line,
                 index_to_last=index_corresponding_to_last_line,
@@ -136,13 +138,11 @@ class NcursesWindowScrolling(_NcursesWindow):
             index_to_first=index_corresponding_to_first_line,
             index_to_last=index_corresponding_to_last_line,
         )
-        if self._index_to_last_line_displayed == len(self._lines) - 1:
+        if self._blank_rowcount() == 0:
             self.autoscroll = True
         curses.napms(5)
 
     def _rows_available_to_write(self):
-        # if self._row_of_last_line_displayed == None:
-        #     return self._win_height - 1
         if self._row_of_last_line_displayed == -1:
             return self._win_height
 
@@ -157,22 +157,12 @@ class NcursesWindowScrolling(_NcursesWindow):
         next_line_wrapped = (
             wrapper(next_line, virtual_win_width) if next_line != "" else [""]
         )
-        while next_line_wrapped[-1] == "":
-            # if next_line_wrapped[-1] == "":
-            next_line_wrapped.pop()
-            file_logger.debug("POP!------------------")
 
         rows_needed_for_writing = len(next_line_wrapped)
 
-        if (
-            rows_needed_for_writing
-            > self._rows_available_to_write()
-            # and not self._resizing
-        ):
-            # not self_resizing should be implied if pre conditions are correct!
+        if rows_needed_for_writing > self._rows_available_to_write():
             # scroll as many lines as would be needed to write the next wrapped line
             lines_to_scroll = rows_needed_for_writing - self._rows_available_to_write()
-            # file_logger.debug(f"SCROLLING {lines_to_scroll} lines")
             self._window.scroll(lines_to_scroll)
             row_cursor = self._win_height - 0 - lines_to_scroll
             row_cursor = self._write_wrapped_lines(row_cursor, next_line_wrapped)
@@ -196,7 +186,7 @@ class NcursesWindowScrolling(_NcursesWindow):
         while line_cursor >= 0:  # do not try to read lines beyond the first in buffer
             next_line = self._lines[line_cursor]
 
-            if fnc_line_min_length is not None:
+            if fnc_line_min_length is None:
                 adjusted_win_length = self._win_width
             else:
                 adjusted_win_length = fnc_line_min_length(next_line)
@@ -259,40 +249,34 @@ class NcursesWindowScrolling(_NcursesWindow):
         self._lines.append(line)
 
     def refresh_view(self, index_to_first=None, index_to_last=None, wrapper=None):
-        # write wrapped lines scrolling to make space available as needed
+        def _refresh_view(index_to_first, index_to_last, wrapper):
+            if self._resizing:
+                self._row_of_last_line_displayed = -1
+                self._index_to_last_line_displayed = index_to_first - 1
+
+            if self.autoscroll:
+                while self._index_to_last_line_displayed < len(self._lines) - 1:
+                    next_line_index = self._index_to_last_line_displayed + 1
+                    next_line = self._lines[next_line_index]
+                    self._write_next_line_as_wrapped(next_line, wrapper)
+                    self._index_to_first_line_displayed -= 1
+            else:
+                self._window.clear()
+                self._index_to_last_line_displayed = index_to_first - 1
+                for index in range(index_to_first, index_to_last + 1):
+                    next_line = self._lines[index]
+                    self._write_next_line_as_wrapped(next_line, wrapper)
+                self._index_to_first_line_displayed = index_to_first
+
         if self._resizing:
-            # screen is cleared, no scrolling by write_next line, just begin at top write until end
-            self._row_of_last_line_displayed = -1
-            # adjust index so next advance by write_next line will place it on index to first and onward
-            self._index_to_last_line_displayed = index_to_first - 1  # proactive
-            for index in range(index_to_first, index_to_last + 1):
-                next_line = self._lines[index]
-                self._write_next_line_as_wrapped(next_line, wrapper)
-            if self._index_to_last_line_displayed == len(self._lines) - 1:
-                self.autoscroll = True
-            # self._resizing = False
-            self._index_to_first_line_displayed = index_to_first
-            self._window.touchwin()
-            self._window.refresh()
+            _refresh_view(index_to_first, index_to_last, wrapper)
         elif self.autoscroll:
-            while self._index_to_last_line_displayed < len(self._lines) - 1:
-                next_line_index = self._index_to_last_line_displayed + 1
-                next_line = self._lines[next_line_index]
-                self._write_next_line_as_wrapped(next_line, wrapper)
-                self._index_to_first_line_displayed -= 1
-            self._window.touchwin()
-            self._window.refresh()
+            _refresh_view(None, None, wrapper)
         elif index_to_first is not None:
-            self._window.clear()  # cleaner to scroll blank lines
-            # adjust index so next advance by write_next line will place it on index to first and onward
-            self._index_to_last_line_displayed = index_to_first - 1
-            for index in range(index_to_first, index_to_last + 1):
-                next_line = self._lines[index]
-                self._write_next_line_as_wrapped(next_line, wrapper)
-            self._index_to_first_line_displayed = index_to_first
-            self._window.touchwin()
-            self._window.refresh()
-        # Refreshing the window to display changes
+            _refresh_view(index_to_first, index_to_last, wrapper)
+
+        self._window.touchwin()
+        self._window.refresh()
 
     def redraw(self):
         if not self.autoscroll:
