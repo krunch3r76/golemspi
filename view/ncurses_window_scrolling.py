@@ -39,6 +39,10 @@ class NcursesWindowScrolling(_NcursesWindow):
         self.__row_of_last_line_displayed = value
 
     def _write_wrapped_lines(self, row_cursor, next_line_wrapped):
+        """write a line at the row cursor and advance the row cursor
+
+        notes: override in subclass for special formatting
+        """
         for i, line in enumerate(next_line_wrapped):
             self._window.move(row_cursor, 0)
             self.insstr_truncated(row_cursor, 0, line)
@@ -47,6 +51,7 @@ class NcursesWindowScrolling(_NcursesWindow):
         return row_cursor - 1
 
     def reconstruct(self):
+        """call the super reconstruct but post-process for scrolling"""
         super().reconstruct()
         self._window.scrollok(True)
 
@@ -63,6 +68,7 @@ class NcursesWindowScrolling(_NcursesWindow):
         )
 
     def _blank_rowcount(self):
+        """return the number of rows unfilled beneath the last row written to"""
         return self._win_height - 1 - self._row_of_last_line_displayed
 
     def scroll_to_top(self):
@@ -101,9 +107,11 @@ class NcursesWindowScrolling(_NcursesWindow):
 
             # update state
             self._index_to_last_line_displayed -= 1
+
             if self._blank_rowcount() == 0:
                 self.autoscroll = False
                 change = True
+
             if index_corresponding_to_first_line == 0:
                 break
 
@@ -138,7 +146,8 @@ class NcursesWindowScrolling(_NcursesWindow):
             index_to_first=index_corresponding_to_first_line,
             index_to_last=index_corresponding_to_last_line,
         )
-        if self._blank_rowcount() == 0:
+
+        if self._index_to_last_line_displayed == len(self._lines) - 1:
             self.autoscroll = True
         curses.napms(5)
 

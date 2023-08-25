@@ -37,6 +37,9 @@ class _NcursesWindow:
         )
         self._window.resize(curses.LINES, curses.COLS)
 
+    def _blank_rowcount(self):
+        return self._win_height - 1 - self._row_of_last_line_displayed
+
     def insstr_truncated(self, row, col, text, attr=None):
         window = self._window
         # Determine the available space for writing
