@@ -108,14 +108,17 @@ class NcursesWindowScrolling(_NcursesWindow):
             # update state
             self._index_to_last_line_displayed -= 1
 
-            if self._blank_rowcount() == 0:
+            if (
+                previous_index_to_last_line_displayed >= 0
+                and self._blank_rowcount() == 0
+            ):
                 self.autoscroll = False
                 change = True
 
             if index_corresponding_to_first_line == 0:
                 break
 
-        curses.napms(5)
+        curses.napms(3)
         if change or index_corresponding_to_first_line == 0:
             self.refresh_view(
                 index_to_first=index_corresponding_to_first_line,
@@ -149,7 +152,7 @@ class NcursesWindowScrolling(_NcursesWindow):
 
         if self._index_to_last_line_displayed == len(self._lines) - 1:
             self.autoscroll = True
-        curses.napms(5)
+        curses.napms(3)
 
     def _rows_available_to_write(self):
         if self._row_of_last_line_displayed == -1:
@@ -296,10 +299,6 @@ class NcursesWindowScrolling(_NcursesWindow):
             ) = self._find_rows_printable_from_top(self._index_to_first_line_displayed)
 
             self._window.clear()
-            self.refresh_view(
-                index_to_first=index_corresponding_to_first_line,
-                index_to_last=index_corresponding_to_last_line,
-            )
         else:
             _, (
                 index_corresponding_to_first_line,
@@ -307,10 +306,10 @@ class NcursesWindowScrolling(_NcursesWindow):
             ) = self._find_rows_printable_up_to_last()
 
             self._window.clear()
-            self.refresh_view(
-                index_to_first=index_corresponding_to_first_line,
-                index_to_last=index_corresponding_to_last_line,
-            )
+        self.refresh_view(
+            index_to_first=index_corresponding_to_first_line,
+            index_to_last=index_corresponding_to_last_line,
+        )
 
     def resize(self, reconstruct=False):
         if not reconstruct:
