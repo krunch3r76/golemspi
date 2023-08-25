@@ -105,7 +105,7 @@ class NcursesWindowScrolling(_NcursesWindow):
             if index_corresponding_to_first_line == 0:
                 break
 
-        curses.napms(1)
+        curses.napms(5)
         if CHANGE or index_corresponding_to_first_line == 0:
             self.refresh_view(
                 index_to_first=index_corresponding_to_first_line,
@@ -138,7 +138,7 @@ class NcursesWindowScrolling(_NcursesWindow):
         )
         if self._index_to_last_line_displayed == len(self._lines) - 1:
             self.autoscroll = True
-        curses.napms(1)
+        curses.napms(5)
 
     def _rows_available_to_write(self):
         # if self._row_of_last_line_displayed == None:
@@ -149,6 +149,7 @@ class NcursesWindowScrolling(_NcursesWindow):
         return self._win_height - self._row_of_last_line_displayed - 1
 
     def _write_next_line_as_wrapped(self, next_line, wrapper=None):
+        # write lines after self._row_of_last_line_displayed scrolling as needed
         if wrapper is None:
             wrapper = textwrap.wrap
 
@@ -257,40 +258,41 @@ class NcursesWindowScrolling(_NcursesWindow):
         """
         self._lines.append(line)
 
-    def refresh_view(
-        self, index_to_first=None, index_to_last=None, wrapper=None, clear=False
-    ):
+    def refresh_view(self, index_to_first=None, index_to_last=None, wrapper=None):
         # write wrapped lines scrolling to make space available as needed
         if self._resizing:
+            # screen is cleared, no scrolling by write_next line, just begin at top write until end
+            self._row_of_last_line_displayed = -1
+            # adjust index so next advance by write_next line will place it on index to first and onward
             self._index_to_last_line_displayed = index_to_first - 1  # proactive
             for index in range(index_to_first, index_to_last + 1):
                 next_line = self._lines[index]
                 self._write_next_line_as_wrapped(next_line, wrapper)
             if self._index_to_last_line_displayed == len(self._lines) - 1:
                 self.autoscroll = True
-            self._resizing = False
+            # self._resizing = False
             self._index_to_first_line_displayed = index_to_first
+            self._window.touchwin()
+            self._window.refresh()
         elif self.autoscroll:
-            # reimplement to count lines drawable up to last in buffer
-            self._index_to_first_line_displayed = self._index_to_last_line_displayed
-            if clear:
-                self._window.clear()
             while self._index_to_last_line_displayed < len(self._lines) - 1:
                 next_line_index = self._index_to_last_line_displayed + 1
                 next_line = self._lines[next_line_index]
                 self._write_next_line_as_wrapped(next_line, wrapper)
                 self._index_to_first_line_displayed -= 1
+            self._window.touchwin()
+            self._window.refresh()
         elif index_to_first is not None:
+            self._window.clear()  # cleaner to scroll blank lines
+            # adjust index so next advance by write_next line will place it on index to first and onward
             self._index_to_last_line_displayed = index_to_first - 1
-            self._row_of_last_line_displayed = -1
-            self._window.clear()
             for index in range(index_to_first, index_to_last + 1):
                 next_line = self._lines[index]
                 self._write_next_line_as_wrapped(next_line, wrapper)
             self._index_to_first_line_displayed = index_to_first
+            self._window.touchwin()
+            self._window.refresh()
         # Refreshing the window to display changes
-        self._window.touchwin()
-        self._window.refresh()
 
     def redraw(self):
         if not self.autoscroll:
@@ -315,7 +317,6 @@ class NcursesWindowScrolling(_NcursesWindow):
             self.refresh_view(
                 index_to_first=index_corresponding_to_first_line,
                 index_to_last=index_corresponding_to_last_line,
-                clear=True,
             )
 
     def resize(self, reconstruct=False):
@@ -326,3 +327,5 @@ class NcursesWindowScrolling(_NcursesWindow):
         else:
             self.reconstruct()
         self._resizing = True
+        self.redraw()
+        self._resizing = False

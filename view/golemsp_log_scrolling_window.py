@@ -113,11 +113,8 @@ class GolemSPLogScrollingWindow(NcursesWindowScrolling):
 
         return row_cursor - 1
 
-    def refresh_view(self, index_to_first=None, index_to_last=None, clear=False):
-        """update the window and optionally specify lines to write to the window and whether to clear
-
-        notes: clear is only used in the case of auto-scrolling (specifically from the resize event)
-        """
+    def refresh_view(self, index_to_first=None, index_to_last=None):
+        """update the window and optionally specify lines to write to the window"""
 
         def mywrapper(next_line, virtual_win_width):
             # wrap to at least include the bracketed expression
@@ -129,4 +126,4 @@ class GolemSPLogScrollingWindow(NcursesWindowScrolling):
             )
             return next_line_wrapped
 
-        super().refresh_view(index_to_first, index_to_last, mywrapper, clear=clear)
+        super().refresh_view(index_to_first, index_to_last, mywrapper)

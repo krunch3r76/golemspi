@@ -34,7 +34,6 @@ class View:
         # check if the user pressed up or down
         if ch == curses.KEY_RESIZE:
             self.console_screen.resize()
-            self.console_screen.redraw()
             return
         elif ch == curses.KEY_UP:
             self.console_screen.scroll_up()
