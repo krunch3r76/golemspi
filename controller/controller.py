@@ -99,11 +99,18 @@ class Controller:
         # )
         k_log_line_read_limit = 10
         while True:
-            if self.shutdown_requested and not self.is_golemsp_running():
-                # self.model.shutdown()
-                self.view.shutdown()
-                break
+            if self.shutdown_requested:
+                if not self.is_golemsp_running():
+                    pass
+                if self.view.shutdown_requested:
+                    self.view.shutdown()
+                    break
+                    # self.model.shutdown()
+                    # self.view.shutdown()
+                    # break
+
                 # sys.exit(0)
+
             # use a performance counter to give time for queue to fill
             if self.queue_read_start_time is None:
                 self.queue_read_start_time = time.perf_counter()

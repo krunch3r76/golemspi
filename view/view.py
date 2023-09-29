@@ -19,6 +19,7 @@ class View:
             line_buffer_class=PredicatedList,
         )  # Create a new pad that is the size of the entire terminal screen
         self.console_screen.refresh_view()
+        self.shutdown_requested = False
 
     def shutdown(self):
         terminate_ncurses(self.scr)  # Call the ncurses termination function
@@ -51,6 +52,8 @@ class View:
             self.console_screen.scroll_to_bottom()
         elif ch == curses.KEY_HOME:
             self.console_screen.scroll_to_top()
+        elif ch == ord("Q"):
+            self.shutdown_requested = True
         else:
             curses.napms(10)
             self.console_screen.refresh_view()
