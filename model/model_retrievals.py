@@ -121,7 +121,7 @@ class ModelRetrievals:
         ):
             payment_network = "testnet"
         elif any(
-            network in self.mdoel.payment_networks for network in ["mainnet", "polygon"]
+            network in self.model.payment_networks for network in ["mainnet", "polygon"]
         ):
             payment_network = "mainnet"
         return payment_network

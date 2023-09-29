@@ -11,6 +11,8 @@
 # these events trigger signals to the model (and view)
 
 import sys
+import time
+import os
 
 # from pathlib import Path
 
@@ -25,16 +27,13 @@ from utils.mylogger import file_logger
 import signal
 
 
-def handle_keyboard_interrupt(signal, _):
-    try:
-        view.shutdown()
-    except:
-        pass
-    sys.exit(signal)
+def read_pid_from_file(filename="/tmp/golemsp_pid.txt"):
+    with open(filename, "r") as f:
+        return int(f.read().strip())
 
 
 # Register the signal handler for Ctrl+C
-signal.signal(signal.SIGINT, handle_keyboard_interrupt)
+# signal.signal(signal.SIGINT, handle_keyboard_interrupt)
 
 file_logger.debug("logging started")
 
@@ -49,9 +48,12 @@ else:
     )
 
 try:
+    golemsp_pid = read_pid_from_file()
     view = View()
     model = Model()
-    controller = Controller(model=model, view=view, log_queue=log_queue)
+    controller = Controller(
+        model=model, view=view, log_queue=log_queue, golemsp_pid=golemsp_pid
+    )
     # Colors.print_color(f"Reading {str_path_to_log_file}", color=Colors.BLUE_BG)
     # console_logger.debug("hello world")
     controller()

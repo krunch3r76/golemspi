@@ -20,8 +20,12 @@ class View:
         )  # Create a new pad that is the size of the entire terminal screen
         self.console_screen.refresh_view()
 
-    def __del__(self):
+    def shutdown(self):
         terminate_ncurses(self.scr)  # Call the ncurses termination function
+
+    def __del__(self):
+        self.shutdown()
+        # terminate_ncurses(self.scr)  # Call the ncurses termination function
 
     def add_log_line(self, line):
         self.console_screen.add_line(line)

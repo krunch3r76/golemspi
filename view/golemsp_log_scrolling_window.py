@@ -1,4 +1,4 @@
-from .ncurses_window_scrolling import NcursesWindowScrolling
+from .ncurses_windows.ncurses_window_scrolling import NcursesWindowScrolling
 from view.ncurses_management import ColorPair
 
 import textwrap

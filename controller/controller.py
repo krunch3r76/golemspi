@@ -4,6 +4,9 @@
 # from utils.colors import Colors
 import queue
 import time
+import os
+import sys
+import signal
 from .events import determine_event_type_and_data
 from .events import parse_log_line
 from .events.log_events import *
@@ -14,12 +17,25 @@ from .model_queries import perform_view_updates
 
 
 class Controller:
-    def __init__(self, model: Model, view, log_queue):
+    def __init__(self, model: Model, view, log_queue, golemsp_pid):
         self.model = model
         self.view = view
         self.current_message = log_queue
         self.subprocess_start_time = None
         self.queue_read_start_time = None
+        self.shutdown_requested = False
+        self.golemsp_pid = golemsp_pid
+        signal.signal(signal.SIGINT, self.handle_keyboard_interrupt)
+
+    def handle_keyboard_interrupt(self, signal, _):
+        self.shutdown_requested = True
+
+    def is_golemsp_running(self):
+        try:
+            os.kill(self.golemsp_pid, 0)
+        except OSError:
+            return False
+        return True
 
     def read_next_message(self):
         try:
@@ -83,6 +99,11 @@ class Controller:
         # )
         k_log_line_read_limit = 10
         while True:
+            if self.shutdown_requested and not self.is_golemsp_running():
+                # self.model.shutdown()
+                self.view.shutdown()
+                break
+                # sys.exit(0)
             # use a performance counter to give time for queue to fill
             if self.queue_read_start_time is None:
                 self.queue_read_start_time = time.perf_counter()

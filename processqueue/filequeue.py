@@ -32,13 +32,20 @@ class ReadLineBuffer:
         self.on_complete_line = on_complete_line
 
     def __call__(self):
-        while True:
-            time.sleep(0.01)
-            line = self.target_text_file.readline()
-            if line:
-                if not line.strip():
-                    line = ""
-                self.on_complete_line(line)
+        logthis = False
+        while True:  # outer loop to resume after KeyboardInterrupt
+            try:
+                while True:
+                    if logthis:
+                        file_logger.debug("reading line")
+                    time.sleep(0.01)
+                    line = self.target_text_file.readline()
+                    if line:
+                        if not line.strip():
+                            line = ""
+                        self.on_complete_line(line)
+            except KeyboardInterrupt:
+                continue
 
 
 class FileQueue:

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export GOLEMSP_TERMINATING=1
 
 cleanup() {
     echo "Cleaning up..."
@@ -36,6 +37,7 @@ run_in_background() {
     $CMD > "$logfile" 2>&1 &
     # $CMD 2>&1 | tee -a "$logfile" 2>/dev/null
     command_pid=$!
+    echo $command_pid >/tmp/golemsp_pid.txt
 }
 
 # Trap the SIGINT signal (Control-C) and call the cleanup function
