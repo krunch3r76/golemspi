@@ -21,7 +21,7 @@ class UsageCoeffsEvent(Event):
         """
 
         pattern = r"Usage coeffs:\s+(\{.*?\})"
-        match = re.search(pattern, string)
+        match = re.search(pattern, log_line.message)
 
         if not match:
             return None

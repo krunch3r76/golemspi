@@ -57,21 +57,36 @@ class Controller:
     def process_log_event(self, log_event):
         if isinstance(log_event, YagnaServiceStartedEvent):
             self.model.additions.add_version_info(**log_event.asdict())
+        elif isinstance(log_event, OfferFromPresetEvent):
+            from pprint import pformat
+
+            file_logger.debug(pformat(log_event.asdict()))
+
         elif isinstance(log_event, InitializedPaymentAccountEvent):
-            self.model.additions.add_initialized_payment_account_info(
-                **log_event.asdict()
-            )
+            # THIS ACCOUNT INFO IS AVAILABLE FROM THE OFFER
+            pass
+            # self.model.additions.add_initialized_payment_account_info(
+            #     **log_event.asdict()
+            # )
         elif isinstance(log_event, PaymentAccountsEvent):
-            self.model.additions.add_payment_accounts(**log_event.asdict())
+            # THIS PAYMENT INFORMATION IS AVAILABLE FROM THE OFFER
+            pass
+            # self.model.additions.add_payment_accounts(**log_event.asdict())
         elif isinstance(log_event, PaymentNetworkEvent):
-            self.model.additions.add_payment_network(**log_event.asdict())
+            pass
+            # THIS PAYMENT (NETWORK) INFORMATION IS ALSO INTERPRETABLE FROM THE OFFER
+            # self.model.additions.add_payment_network(**log_event.asdict())
         elif isinstance(log_event, HardwareResourcesCapEvent):
             self.model.additions.add_hardware_cap_info(**log_event.asdict())
             # file_logger.debug(self.model.hardware_resource_cap_info)
         elif isinstance(log_event, UsingSubnetEvent):
-            self.model.additions.add_subnet_utilized(**log_event.asdict())
+            # THE SUBNET IS ALSO AVAILABLE FROM THE OFFER
+            pass
+            # self.model.additions.add_subnet_utilized(**log_event.asdict())
         elif isinstance(log_event, UsageCoeffsEvent):
-            self.model.additions.update_usage_coeffs(**log_event.as_dict())
+            # USAGE IS AVAILABLE FROM THE OFFER
+            pass
+            # self.model.additions.update_usage_coeffs(**log_event.as_dict())
         elif isinstance(log_event, NewAgreementEvent):
             self.model.additions.add_agreement(**log_event.asdict())
         elif isinstance(log_event, NewTaskEvent):
@@ -122,12 +137,22 @@ class Controller:
                     # read a bunch of log lines before processing
                     log_line_count += 1
                     # handle multi line log message (always a list)
-                    if log_line.endswith("["):
-                        while not log_line.endswith("]"):
-                            inner_line = self.read_next_message()
-                            if inner_line is not None:
-                                log_line += self.read_next_message()
-                    self.view.add_log_line(log_line)
+                    if log_line.strip().endswith("["):
+                        while not log_line.strip().endswith("]"):
+                            # log_line += "\n"
+                            inner_line = None
+                            while inner_line is None:
+                                inner_line = self.read_next_message()
+                            log_line += inner_line
+                    elif log_line.strip().endswith("{"):
+                        while not log_line.strip().endswith("}"):
+                            # log_line += "\n"
+                            inner_line = None
+                            while inner_line is None:
+                                inner_line = self.read_next_message()
+                            log_line += inner_line
+                    self.view.add_log_line(log_line.rstrip())
+
                     log_event = self.determine_event_type_and_data(log_line)
                     if log_event is not None:
                         self.process_log_event(log_event)  # add to model

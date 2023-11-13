@@ -14,3 +14,4 @@ from .hardware_resources_cap_event import HardwareResourcesCapEvent
 from .using_subnet_event import UsingSubnetEvent
 from .usage_coeffs_event import UsageCoeffsEvent
 from .identity_event import IdentityEvent
+from .offer_from_preset import OfferFromPresetEvent

@@ -29,7 +29,10 @@ class View:
         # terminate_ncurses(self.scr)  # Call the ncurses termination function
 
     def add_log_line(self, line):
-        self.console_screen.add_line(line)
+        split_lines = line.splitlines()
+
+        for splitline in split_lines:
+            self.console_screen.add_line(splitline)
         # self.console_screen.refresh_view()
 
     def update(self):

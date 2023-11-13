@@ -35,7 +35,8 @@ class _NcursesWindow:
         self._window = curses.newwin(
             self._win_height, self._win_width, self._margin_top, self._margin_left
         )
-        self._window.resize(curses.LINES, curses.COLS)
+        # self._window.resize(curses.LINES, curses.COLS)
+        self._window.resize(self._win_height, self._win_width)
 
     def _blank_rowcount(self):
         return self._win_height - 1 - self._row_of_last_line_displayed
